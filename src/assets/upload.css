@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+/* Container for the entire layout */
+.container {
+  display: flex;
+  justify-content: space-between;
+  padding: 2rem;
+  background-color: #f7fafc;
+}
+
+/* Left Section: Drag and Drop Area */
+.upload-area {
+  position: relative;
+  width: 75%; /* Adjust to occupy the remaining space */
+  height: auto; /* Adjust the height as needed */
+  background-image: url("./images/missing-image.svg"); /* Ensure the correct image path */
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px;
+}
+
+.drag-drop-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.drag-drop-text {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.choose-file-btn {
+  padding: 0.5rem 1rem;
+  background-color: #532b88;
+  color: #f4effa;
+  font-size: 0.9rem;
+  font-weight: 400;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.choose-file-btn:hover {
+  background-color: #6d28d9;
+}
+
+/* Right Section: Form Area */
+.form-area {
+  width: 25%; /* Adjust to occupy 25% of the screen */
+  background-color: #f4effa;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.form-title {
+  font-size: 1.25rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.form-subtitle {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.form-fields .form-group {
+  margin-bottom: 1rem;
+  font-size: 0.875rem; /* Smaller font size */
+  font-weight: 300;
+}
+
+.form-label {
+  font-size: 0.875rem; /* Smaller font size */
+  font-weight: 300;
+  color: #2f184b;
+  text-align: left; /* Align labels to the left */
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem; /* Smaller font size */
+  color: #4b5563;
+  background-color: #f9fafb;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cancel-btn,
+.upload-btn {
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 400;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.cancel-btn {
+  background-color: #e5e7eb;
+  color: #6b7280;
+}
+
+.cancel-btn:hover {
+  background-color: #d1d5db;
+}
+
+.upload-btn {
+  background-color: #532b88;
+  color: white;
+}
+
+.upload-btn:hover {
+  background-color: #6d28d9;
+}

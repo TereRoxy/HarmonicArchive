@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+:root {
+  --default-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Ubuntu, "Helvetica Neue", Helvetica, Arial, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft Yahei UI", "Microsoft Yahei",
+    "Source Han Sans CN", sans-serif;
+}
+
+.music-score-container {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #f4effa;
+}
+
+.music-score-section {
+  display: flex;
+  width: 100%;
+  gap: 16px;
+  align-items: flex-start; /* Align items at the top */
+}
+
+.pdf-viewer {
+  flex: 0 0 70%;
+  height: auto;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f4effa !important;
+}
+
+.music-score-details {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  height: auto;
+}
+
+.music-score-header {
+  margin-bottom: 16px;
+}
+
+.music-score-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #2f184b;
+  margin-bottom: 16px;
+}
+
+.music-score-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.music-score-genres {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.genre-tag {
+  padding: 6px 12px;
+  background: #cff7d3;
+  border-radius: 8px;
+  color: #02542d;
+  font-size: 14px;
+}
+
+.key-tag {
+  padding: 6px 12px;
+  background: rgba(255, 126, 216, 0.47);
+  border-radius: 8px;
+  color: #02542d;
+  font-size: 14px;
+  width: fit-content;
+}
+
+.music-score-year {
+  font-size: 16px;
+  color: #757575;
+  margin-bottom: 24px;
+  text-align: left; /* Explicit left alignment */
+  width: 100%; /* Ensure full width for alignment */
+}
+
+.music-score-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.action-button {
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  color: #f5f5f5;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-height: 44px;
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.download-button {
+  background: #9b72cf;
+}
+
+.collection-button {
+  background: #2f184b;
+}
+
+.modify-button {
+  background: #c8b1e4;
+  color: #2f184b;
+}
+
+.delete-button {
+  background: #532b88;
+}
+
+.modify-form {
+  padding: 16px;
+  background: #f8f5ff;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #2f184b;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cancel-btn {
+  padding: 8px 16px;
+  background: #e0e0e0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-btn {
+  padding: 8px 16px;
+  background: #9b72cf;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}

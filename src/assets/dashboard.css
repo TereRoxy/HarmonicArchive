@@ -1,0 +1,280 @@
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #9b72cf;
+  padding: 20px;
+  color: white;
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 15px;
+}
+
+.profile-text p {
+  margin: 5px 0;
+}
+
+.username-display {
+  color: #2f184b;
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.1s ease;
+}
+.slide-fade-enter, .slide-fade-leave-to /* .slide-fade-leave-active in <2.1.8 */ {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.filter-section {
+  align-items: center;
+  margin-top: 30px;
+}
+
+.filter-title {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.filter-icon {
+  margin-right: 10px;
+}
+
+.filter-dropdown {
+  margin-top: 20px;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 5px;
+  background-color: #532b88;
+  font-weight: bold;
+  border-radius: 5px;
+}
+
+.filter-chips {
+  margin-top: 10px;
+}
+
+.chip {
+  display: inline-block;
+  background-color: #c8b1e4;
+  color: #2f184b;
+  padding: 5px 10px;
+  border-radius: 15px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+.remove-chip {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.sort-pagination-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sort-options {
+  display: flex;
+}
+
+.sort-options button {
+  background-color: #532b88;
+  color: #f4effa;
+  border: none;
+  padding: 10px;
+  margin-left: 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.sort-options button:hover {
+  background-color: #6d28d9;
+}
+
+.sort-options span {
+  margin-left: 5px;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  background-color: #f3f1f7;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.archive-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-right: 20px;
+}
+
+.search-container {
+  display: flex;
+  flex: 1;
+  position: relative;
+  justify-content: center;
+  max-width: 400px; /* Adjust the max-width as needed */
+}
+
+.search-input {
+  flex: 1;
+  padding: 8px 40px 8px 15px; /* Add padding to the right for the clear button */
+  border-radius: 50px;
+  background-color: #c8b1e4;
+  color: #2f184b;
+  border: none;
+  cursor: pointer;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2f184b;
+  font-size: 16px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.pagination button {
+  padding: 8px;
+  margin: 0 5px;
+  background-color: #f4effa;
+  color: #532b88;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.pagination button.active {
+  background-color: #532b88;
+  color: #f4effa;
+  border-radius: 5px;
+}
+
+.pagination button:disabled {
+  color: #9b72cf;
+  cursor: default;
+}
+
+.music-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.music-item {
+  background-color: white;
+  padding: 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.music-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.item-info h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.item-info p {
+  margin: 5px 0;
+}
+
+.upload-btn-dashboard {
+  padding: 10px 20px;
+  background-color: #532b88;
+  border-radius: 10px;
+  color: #f4effa;
+  border: none;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.upload-btn-dashboard:hover {
+  background-color: #6d28d9;
+}
+
+.year-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.worker-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.worker-btn:hover {
+  background-color: #45a049;
+}
+
+.items-per-page select {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  margin-left: 10px;
+}
