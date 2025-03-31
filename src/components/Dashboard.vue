@@ -169,15 +169,26 @@ export default {
         if (this.worker) {
           this.worker.terminate();
           this.worker = null;
+          console.log("Worker terminated.");
         }
         this.workerActive = false;
       } else {
         if (window.Worker) {
+          // Use the correct filename and Vite's worker import syntax
+          console.log("Creating worker...");
           this.worker = new Worker(
-            new URL("../workers/generateMusicSheetsWorker.js", import.meta.url)
+            new URL("../workers/generateMusicSheets.worker.js", import.meta.url),
+            { type: 'module' } // Important for ES module workers
           );
+
+            // Add error handler
+          this.worker.onerror = (e) => {
+            console.error('Worker error:', e);
+          };
+          
           this.worker.postMessage({ interval: 2000 });
           this.worker.onmessage = (e) => {
+            console.log('Received from worker:', e.data); // Add this
             if (state.musicSheets) {
               state.musicSheets.push(e.data);
             }
