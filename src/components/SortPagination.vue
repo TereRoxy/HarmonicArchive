@@ -19,18 +19,19 @@
       </div>
   
       <div class="pagination">
-        <button @click="$emit('goToPage', currentPage - 1)" :disabled="currentPage === 1">
+        <button data-testid="prev-page" @click="$emit('goToPage', currentPage - 1)" :disabled="currentPage === 1">
           ← Previous
         </button>
         <button
           v-for="page in totalPages"
           :key="page"
           :class="{ active: currentPage === page }"
+          :data-testid="`page-${page}-btn`"
           @click="$emit('goToPage', page)"
         >
           {{ page }}
         </button>
-        <button @click="$emit('goToPage', currentPage + 1)" :disabled="currentPage === totalPages">
+        <button data-testid="next-page" @click="$emit('goToPage', currentPage + 1)" :disabled="currentPage === totalPages">
           Next →
         </button>
   

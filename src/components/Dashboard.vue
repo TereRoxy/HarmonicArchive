@@ -186,7 +186,7 @@ export default {
             console.error('Worker error:', e);
           };
           
-          this.worker.postMessage({ interval: 2000 });
+          this.worker.postMessage({ interval: 200 });
           this.worker.onmessage = (e) => {
             console.log('Received from worker:', e.data); // Add this
             if (state.musicSheets) {
