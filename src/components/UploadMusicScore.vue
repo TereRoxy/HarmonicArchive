@@ -24,7 +24,7 @@
     <div class="form-area">
       <h2 class="form-title">Upload a new score</h2>
       <p class="form-subtitle">Contribute to the community</p>
-      <form @submit.prevent="handleSubmit">
+      <form @submit.prevent="submitForm">
         <div class="form-fields">
           <div class="form-group">
             <label for="title" class="form-label">Title</label>
@@ -71,11 +71,11 @@
           </div>
 
           <div class="form-group">
-            <label for="genre" class="form-label">Genre</label>
+            <label for="genres" class="form-label">Genre(s)</label>
             <input
               type="text"
-              id="genre"
-              v-model="formData.genre"
+              id="genres"
+              v-model="formData.genres"
               class="form-input"
               required
             />
@@ -97,7 +97,7 @@
           <button type="button" class="cancel-btn" @click="goBack">
             Cancel
           </button>
-          <button type="submit" class="upload-btn">Upload</button>
+          <button type="submit" class="upload-btn" @click="submitForm" >Upload</button>
         </div>
       </form>
     </div>
@@ -115,7 +115,7 @@ export default {
         composer: "",
         year: "",
         key: "",
-        genre: "",
+        genres: "",
         instruments: "",
       },
       selectedFile: null,
@@ -143,7 +143,7 @@ export default {
         composer: "",
         year: "",
         key: "",
-        genre: "",
+        genres: "",
         instruments: "",
       };
       this.selectedFile = null;
@@ -161,40 +161,35 @@ export default {
         titleRegex.test(this.formData.composer) &&
         yearRegex.test(this.formData.year) &&
         keyRegex.test(this.formData.key) &&
-        titleRegex.test(this.formData.genre) &&
-        titleRegex.test(this.formData.instruments)
+        titleRegex.test(this.formData.genres) &&
+        titleRegex.test(this.formData.instruments) &&
+        this.selectedFile // Ensure a file is selected
       );
     },
-    handleSubmit() {
-      if (!this.formDataValid()) {
-        alert("Please fill in all fields with valid characters");
-        return;
-      }
-      if (!this.selectedFile) {
-        alert("Please select a file to upload");
-        return;
-      }
+    // In your submit handler method:
+    async submitForm() {
+    if (!this.formDataValid()) return;
 
-      // Add to the shared state
-      state.musicSheets.push({
-        id: state.musicSheets.length + 1,
-        title: this.formData.title,
-        composer: this.formData.composer,
-        year: this.formData.year,
-        key: this.formData.key,
-        genres: this.formData.genre.split(",").map((genre) => genre.trim()),
-        instruments: this.formData.instruments
-          .split(",")
-          .map((instrument) => instrument.trim()),
-        file: URL.createObjectURL(this.selectedFile), // Convert to URL
-      });
+    const newMusicSheet = {
+      id: Date.now(), // Generate unique ID
+      title: this.formData.title,
+      composer: this.formData.composer,
+      year: this.formData.year,
+      key: this.formData.key,
+      genres: this.formData.genres.split(',').map((g) => g.trim()), // Split genres string into an array
+      instruments: this.formData.instruments.split(',').map((i) => i.trim()), // Split instruments string into an array
+      link: this.selectedFile ? URL.createObjectURL(this.selectedFile) : null, // Generate file link if file is selected
+      filetype: "PDF",
+    };
 
-      console.log(state.musicSheets);
+    // Update the reactive state
+    state.musicSheets = [...state.musicSheets, newMusicSheet];
 
-      alert("File uploaded successfully!");
-      this.goBack();
+    this.goBack(); // Navigate back to the previous page
+    this.$emit("music-sheet-created", newMusicSheet); // Emit the updated music sheets
+    this.resetForm(); // Reset the form after submission
     },
-  },
+}
 };
 </script>
 

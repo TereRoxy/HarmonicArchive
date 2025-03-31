@@ -59,76 +59,83 @@ describe("CRUD Operations", () => {
       });
     });
 
-    it("uploads a new music sheet when form is valid", async () => {
-      const file = new File(["content"], "test.pdf", {
-        type: "application/pdf",
-      });
-      wrapper.vm.selectedFile = file;
+    it("emits music-sheet-created with correct data when form is valid", async () => {
+      const validateFormSpy = vi.spyOn(wrapper.vm, "formDataValid").mockReturnValue(true);
 
+      // 1. Set up test data
+      const file = new File(["content"], "test.pdf", { type: "application/pdf" });
       await wrapper.setData({
+        selectedFile: file,
         formData: {
           title: "New Song",
           composer: "New Composer",
-          year: "2023",
+          year: 2023,
           key: "G",
-          genre: "Jazz, Blues",
+          genres: "Jazz, Blues", // Testing string input conversion
           instruments: "Piano, Saxophone",
         },
       });
 
+      // 2. Trigger form submission
       await wrapper.find("form").trigger("submit.prevent");
 
-      expect(state.musicSheets).toContainEqual({
+      // 3. Verify the emitted event
+      const emittedEvents = wrapper.emitted('music-sheet-created');
+      expect(emittedEvents).toBeTruthy();
+      expect(emittedEvents).toHaveLength(1);
+
+      const [emittedData] = emittedEvents[0];
+      expect(emittedData).toMatchObject({
         id: expect.any(Number),
         title: "New Song",
         composer: "New Composer",
         year: 2023,
         key: "G",
-        genres: ["Jazz", "Blues"],
+        genres: ["Jazz", "Blues"], // Should be converted to array
         instruments: ["Piano", "Saxophone"],
-        file: "mocked-url",
+        link: "mocked-url",
+        filetype: "PDF",
       });
 
+      // 4. Verify navigation
       expect(wrapper.vm.$router.go).toHaveBeenCalledWith(-1);
+
+      // Clean up spy
+      validateFormSpy.mockRestore();
     });
 
-    it("does not upload when form is invalid", async () => {
-      const initialLength = state.musicSheets.length;
-
+    it("does not emit when form is invalid", async () => {
       await wrapper.setData({
+        selectedFile: null,
         formData: {
-          title: "",
+          title: "", // Invalid - empty title
           composer: "New Composer",
-          year: "2023",
+          year: 2023,
           key: "G",
-          genre: "Jazz",
+          genres: "Jazz",
           instruments: "Piano",
         },
       });
 
       await wrapper.find("form").trigger("submit.prevent");
-
-      expect(state.musicSheets).toHaveLength(initialLength);
+      expect(wrapper.emitted('music-sheet-created')).toBeUndefined();
     });
 
-    it("does not upload when no file is selected", async () => {
-      const initialLength = state.musicSheets.length;
-
-      wrapper.vm.selectedFile = null;
+    it("does not emit when no file is selected", async () => {
       await wrapper.setData({
+        selectedFile: null,
         formData: {
           title: "New Song",
           composer: "New Composer",
-          year: "2023",
+          year: 2023,
           key: "G",
-          genre: "Jazz",
+          genres: "Jazz",
           instruments: "Piano",
         },
       });
 
       await wrapper.find("form").trigger("submit.prevent");
-
-      expect(state.musicSheets).toHaveLength(initialLength);
+      expect(wrapper.emitted('music-sheet-created')).toBeUndefined();
     });
   });
 
@@ -177,7 +184,7 @@ describe("CRUD Operations", () => {
           composer: "Composer A",
           year: "2000",
           key: "C",
-          genre: "Rock",
+          genres: "Rock",
         },
       });
 
@@ -211,7 +218,7 @@ describe("CRUD Operations", () => {
           composer: "Updated Composer",
           year: "2001",
           key: "D",
-          genre: "Rock, Metal",
+          genres: "Rock, Metal",
         },
       });
 
