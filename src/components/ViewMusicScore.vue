@@ -106,12 +106,13 @@
 
 <script>
 import PdfViewer from "pdf-viewer-vue";
-import { state } from "../sharedstate";
+import api from "../services/api"; // Import the API
 
 export default {
   components: {
     PdfViewer,
   },
+  props: ['id'],
   data() {
     return {
       musicSheet: null,
@@ -125,10 +126,32 @@ export default {
       },
     };
   },
+  watch: {
+    // Watch for changes in the id parameter
+    id: {
+      immediate: true,
+      handler(newId) {
+        if (newId) {
+          this.fetchMusicSheet();
+        }
+      }
+    }
+  },
   created() {
-    this.musicSheet = state.selectedMusicSheet;
+    this.fetchMusicSheet();
   },
   methods: {
+    async fetchMusicSheet() {
+      const id = this.$route.params.id;
+      console.log("Fetching music sheet with id:", id); // Debugging
+      try {
+        const response = await api.getSheet(id); // Use the proper API method
+        console.log("Music sheet fetched successfully:", response.data);
+        this.musicSheet = response.data;
+      } catch (error) {
+        console.error("Error fetching music sheet:", error);
+      }
+    },
     startEditing() {
       this.isEditing = !this.isEditing;
       if (this.isEditing) {
@@ -144,7 +167,7 @@ export default {
     cancelEdit() {
       this.isEditing = false;
     },
-    saveChanges() {
+    async saveChanges() {
       const updatedSheet = {
         ...this.musicSheet,
         title: this.editData.title,
@@ -154,27 +177,26 @@ export default {
         genres: this.editData.genre.split(",").map((g) => g.trim()),
       };
 
-      const index = state.musicSheets.findIndex(
-        (sheet) => sheet.id === this.musicSheet.id
-      );
-      if (index !== -1) {
-        state.musicSheets.splice(index, 1, updatedSheet);
-        state.selectedMusicSheet = updatedSheet;
-        this.musicSheet = updatedSheet;
-      }
+      console.log("Saving changes for music sheet:", updatedSheet);
 
-      this.isEditing = false;
-      alert("Changes saved successfully!");
+      try {
+        await api.editSheet(this.musicSheet.id, updatedSheet); // Update the sheet via API
+        console.log("Music sheet updated successfully.");
+        this.musicSheet = updatedSheet; // Update the local data
+        this.isEditing = false;
+        alert("Changes saved successfully!");
+      } catch (error) {
+        console.error("Error saving changes:", error);
+      }
     },
-    deleteMusicSheet() {
+    async deleteMusicSheet() {
       if (window.confirm("Are you sure you want to delete this music sheet?")) {
-        const index = state.musicSheets.findIndex(
-          (sheet) => sheet.id === this.musicSheet.id
-        );
-        if (index !== -1) {
-          state.musicSheets.splice(index, 1);
-          state.selectedMusicSheet = null;
-          this.$router.push("/");
+        try {
+          await api.deleteSheet(this.musicSheet.id); // Delete the sheet via API
+          console.log("Music sheet deleted successfully.");
+          this.$router.push("/"); // Navigate back to the home page
+        } catch (error) {
+          console.error("Error deleting music sheet:", error);
         }
       }
     },

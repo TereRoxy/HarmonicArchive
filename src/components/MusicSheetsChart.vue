@@ -15,7 +15,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { state } from "../sharedstate"; // Import the shared state
+import api from "../services/api"; // Import the API
 
 ChartJS.register(
   BarElement,
@@ -30,12 +30,17 @@ export default {
   components: {
     Bar,
   },
+  data() {
+    return {
+      musicSheets: [], // Local state for music sheets
+    };
+  },
   computed: {
     chartData() {
       const decadeCounts = {};
 
-      // Use state.musicSheets directly
-      state.musicSheets.forEach((sheet) => {
+      // Process the music sheets data
+      this.musicSheets.forEach((sheet) => {
         const decade = Math.floor(sheet.year / 10) * 10;
         if (decadeCounts[decade]) {
           decadeCounts[decade]++;
@@ -81,6 +86,26 @@ export default {
         },
       };
     },
+  },
+  methods: {
+    fetchMusicSheets() {
+
+      console.log("Fetching music sheets for chart.");
+
+      // Fetch music sheets from the API
+      api.getSheets()
+        .then((response) => {
+          console.log("Music sheets fetched successfully for chart:", response.data);
+          this.musicSheets = response.data;
+        })
+        .catch((error) => {
+          console.error("Error fetching music sheets:", error);
+        });
+    },
+  },
+  created() {
+    // Fetch data when the component is created
+    this.fetchMusicSheets();
   },
 };
 </script>

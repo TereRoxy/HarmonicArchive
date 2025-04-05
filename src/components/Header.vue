@@ -5,7 +5,7 @@
         <div class="search-container">
           <input
             :value="searchQuery"
-            @input="$emit('update:searchQuery', $event.target.value)"
+            @input="$emit('search', searchQuery)"
             type="text"
             placeholder="Search by Composer or Title"
             class="search-input"
@@ -18,9 +18,7 @@
   
   <script>
   export default {
-    props: {
-      searchQuery: String,
-    },
+    props: ['searchQuery'],
   };
   </script>
   

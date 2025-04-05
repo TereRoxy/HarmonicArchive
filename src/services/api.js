@@ -1,37 +1,40 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5173/api', // Match your backend port
+  baseURL: 'http://localhost:5000/api', // Changed to match server port
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 export default {
-  // Get all entities
-  getSheets() {
-    return api.get('/sheets');
+  // Get all sheets with optional filtering
+  getSheets(params = {}) {
+    return api.get('/sheets', { params });
   },
 
-  // Add a new entity
+  // Get single sheet
+  getSheet(id) {
+    return api.get(`/sheets/${id}`);
+  },
+
+  // Add a new sheet
   addSheet(sheet) {
     return api.post('/sheets', sheet);
   },
 
-  // Edit an existing entity
-  editSheet(sheetId, updatedData) {
-    return api.patch(`/sheets/${sheetId}`, updatedData);
+  // Edit an existing sheet
+  editSheet(id, updatedData) {
+    return api.patch(`/sheets/${id}`, updatedData);
   },
 
-  // Remove an entity
-  deleteSheet(sheetId) {
-    return api.delete(`/sheets/${sheetId}`);
+  // Remove a sheet
+  deleteSheet(id) {
+    return api.delete(`/sheets/${id}`);
   },
 
-  // Get filtered entities
+  // Get filtered sheets (same as getSheets with params)
   getFilteredSheets(filterParams) {
-    return api.get('/sheets', { params: filterParams });
-  },
-
-  // Get sorted entities
-  getSortedSheets(sortBy, order = 'asc') {
-    return api.get('/sheets', { params: { _sort: sortBy, _order: order } });
-  },
+    return this.getSheets(filterParams);
+  }
 };
