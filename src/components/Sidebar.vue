@@ -90,7 +90,10 @@
       instruments: Array,
       selectedGenres: Array,
       selectedInstruments: Array,
-      musicSheets: Array,
+      musicSheets: {
+        type: Array,
+        default: () => [] // Provide empty array as default
+      },
     },
     data() {
       return {

@@ -4,13 +4,12 @@
         <div class="archive-title">My Archive</div>
         <div class="search-container">
           <input
-            :value="searchQuery"
-            @input="$emit('search', searchQuery)"
-            type="text"
+            v-model="localSearchQuery"
+            @keyup.enter="handleSearch"
             placeholder="Search by Composer or Title"
             class="search-input"
           />
-          <button @click="$emit('clearSearch')" class="clear-search-btn">❌</button>
+          <button @click="clearSearch" class="clear-search-btn">❌</button>
         </div>
       </div>
     </div>
@@ -19,6 +18,25 @@
   <script>
   export default {
     props: ['searchQuery'],
+    data() {
+    return {
+      localSearchQuery: this.searchQuery
+    };
+  },
+  watch: {
+    searchQuery(newVal) {
+      this.localSearchQuery = newVal;
+    }
+  },
+  methods: {
+    handleSearch() {
+      this.$emit('search', this.localSearchQuery);
+    },
+    clearSearch() {
+      this.localSearchQuery = "";
+      this.$emit('clearSearch');
+    }
+  }
   };
   </script>
   

@@ -88,27 +88,50 @@ export default {
   },
   methods: {
     fetchMusicSheets() {
-      // Fetch music sheets with filters, sorting, and pagination
-      const params = {
-        _page: this.currentPage,
-        _limit: this.itemsPerPage,
-        _sort: this.sortBy,
-        _order: this.sortOrder,
-        genres: this.selectedGenres.join(","),
-        instruments: this.selectedInstruments.join(","),
-        q: this.searchQuery,
-      };
+    const params = {
+      _page: this.currentPage,
+      _limit: this.itemsPerPage,
+      _sort: this.sortBy,
+      _order: this.sortOrder,
+    };
 
-      console.log("Fetching music sheets with params:", params);
+    // Add search query if exists
+    if (this.searchQuery) {
+      params.q = this.searchQuery;
+    }
 
-      api.getFilteredSheets(params)
+    // Add genre filter if any selected
+    if (this.selectedGenres.length) {
+      params.genres = this.selectedGenres.join(',');
+    }
+
+    // Add instrument filter if any selected
+    if (this.selectedInstruments.length) {
+      params.instruments = this.selectedInstruments.join(',');
+    }
+
+    console.log("Fetching with params:", params); // Debug log
+
+    api.getMusicSheets(params)
+      .then(response => {
+        this.musicSheets = response.data.data;
+        this.totalItems = response.data.total;
+      })
+      .catch(error => {
+        console.error("Error fetching music sheets:", error);
+      });
+  },
+
+    getMusicSheets(params = {}) {
+      api.getMusicSheets(params)
         .then(response => {
-          console.log("Music sheets fetched successfully:", response.data);
-          this.musicSheets = response.data;
-          this.totalItems = parseInt(response.headers["x-total-count"], 10) || 0;
+          this.musicSheets = response.data.data || response.data; // Handle both response formats
+          this.totalItems = response.data.total || response.data.length || 0;
         })
         .catch(error => {
           console.error("Error fetching music sheets:", error);
+          this.musicSheets = [];
+          this.totalItems = 0;
         });
     },
     searchItems(query) {
@@ -129,6 +152,7 @@ export default {
       } else {
         this.selectedGenres.push(genre);
       }
+      this.currentPage = 1; // Reset to first page when filtering
       this.fetchMusicSheets();
     },
     toggleInstrument(instrument) {
@@ -139,11 +163,14 @@ export default {
       } else {
         this.selectedInstruments.push(instrument);
       }
+      this.currentPage = 1; // Reset to first page when filtering
       this.fetchMusicSheets();
     },
     clearFilters() {
       this.selectedGenres = [];
       this.selectedInstruments = [];
+      this.searchQuery = "";
+      this.currentPage = 1; // Reset to first page when clearing filters
       this.fetchMusicSheets();
     },
     setSort(sortBy) {
@@ -156,46 +183,51 @@ export default {
       this.fetchMusicSheets();
     },
     goToPage(page) {
-      if (page >= 1 && page <= this.totalPages) {
-        this.currentPage = page;
-        this.fetchMusicSheets();
+      const pageNum = Number(page);
+      if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= this.totalPages) {
+        this.currentPage = pageNum;
+        this.fetchMusicSheets({
+          _page: this.currentPage,
+          _limit: this.itemsPerPage,
+          _sort: this.sortBy,
+          _order: this.sortOrder,
+          genres: this.selectedGenres.join(","),
+          instruments: this.selectedInstruments.join(","),
+          q: this.searchQuery
+        });
       }
     },
     changeItemsPerPage(itemsPerPage) {
-      this.itemsPerPage = itemsPerPage;
+      this.itemsPerPage = itemsPerPage === 'infinite' ? Number.MAX_SAFE_INTEGER : parseInt(itemsPerPage);
       this.currentPage = 1;
       this.fetchMusicSheets();
     },
     toggleWorker() {
       if (this.workerActive) {
-        if (this.worker) {
-          this.worker.terminate();
-          this.worker = null;
-          console.log("Worker terminated.");
+        this.wsConnection.send({
+          type: 'TOGGLE_GENERATION',
+          active: false
+        });
+        if (this.wsConnection) {
+          this.wsConnection.close();
         }
         this.workerActive = false;
       } else {
-        if (window.Worker) {
-          console.log("Creating worker...");
-          this.worker = new Worker(
-            new URL("../workers/generateMusicSheets.worker.js", import.meta.url),
-            { type: "module" }
-          );
-
-          this.worker.onerror = (e) => {
-            console.error("Worker error:", e);
-          };
-
-          this.worker.postMessage({ interval: 200,  apiUrl: "http://localhost:5000", });
-          this.worker.onmessage = (e) => {
-            console.log("Received from worker:", e.data);
-            this.fetchMusicSheets(); // Refresh the list after receiving new data
-          };
-          this.workerActive = true;
-        }
-        else {
-          console.error("Web Workers are not supported in this browser.");
-        }
+        this.wsConnection = api.setupWebSocket((message) => {
+          if (message.type === 'NEW_SHEET') {
+            // Add new sheet to beginning of list
+            this.musicSheets.unshift(message.data);
+            this.totalItems += 1;
+          }
+        });
+        
+        this.wsConnection.send({
+          type: 'TOGGLE_GENERATION',
+          active: true,
+          interval: 2000
+        });
+        
+        this.workerActive = true;
       }
     },
     openItem(item) {
@@ -207,11 +239,24 @@ export default {
     }
   },
   created() {
-    this.fetchMusicSheets(); // Fetch data when the component is created
+    this.getMusicSheets(); // Fetch data when the component is created
+
+      // Check initial generation status
+    api.getGenerationStatus().then(response => {
+      this.workerActive = response.data.isGenerating;
+    });
+    
+    // Initialize WebSocket connection
+    this.wsConnection = api.setupWebSocket((message) => {
+      if (message.type === 'NEW_SHEET') {
+        this.musicSheets.unshift(message.data);
+        this.totalItems += 1;
+      }
+    });
   },
   beforeUnmount() {
-    if (this.worker) {
-      this.worker.terminate();
+    if (this.wsConnection) {
+      this.wsConnection.close();
     }
   }
 };

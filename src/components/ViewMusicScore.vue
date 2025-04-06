@@ -1,9 +1,10 @@
 <template>
   <div class="music-score-container" v-if="musicSheet">
     <div class="music-score-section">
-      <div class="pdf-viewer" v-if="musicSheet.link">
+      <!-- <div class="pdf-viewer" v-if="musicSheet.link">
         <pdf-viewer :source="musicSheet.link" />
-      </div>
+      </div> > -->
+      <!-- <iframe :src="musicSheet.link" frameborder="0" class="pdf-iframe"></iframe> -->
       <div class="music-score-details">
         <div class="music-score-header">
           <h1 class="music-score-title">
@@ -127,16 +128,15 @@ export default {
     };
   },
   watch: {
-    // Watch for changes in the id parameter
-    id: {
-      immediate: true,
-      handler(newId) {
-        if (newId) {
-          this.fetchMusicSheet();
-        }
+  id: {
+    immediate: true,
+    handler(newId) {
+      if (newId) {
+        this.fetchMusicSheet();
       }
-    }
+    },
   },
+},
   created() {
     this.fetchMusicSheet();
   },
@@ -148,6 +148,7 @@ export default {
         const response = await api.getSheet(id); // Use the proper API method
         console.log("Music sheet fetched successfully:", response.data);
         this.musicSheet = response.data;
+        console.log("PDF Source:", this.musicSheet.link);
       } catch (error) {
         console.error("Error fetching music sheet:", error);
       }
