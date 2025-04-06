@@ -233,7 +233,7 @@ export default {
       this.wsConnection = api.setupWebSocket((message) => {
         if (message.type === 'NEW_SHEET') {
           //this.musicSheets.unshift(message.data);
-          this.totalItems += 1;
+          //this.totalItems += 1;
           console.log("New sheet received:", message.data);
           console.log("Total items:", this.totalItems);
         } else if (message.type === 'STATUS_UPDATE') {
