@@ -14,7 +14,7 @@
           <span v-if="sortBy === 'year'">{{ sortOrder === "asc" ? "↑" : "↓" }}</span>
         </button>
         <button @click="$emit('toggleWorker')" class="worker-btn">
-          {{ workerActive ? "Stop Generator" : "Start Generator" }}
+        {{ workerActive ? "Stop Generator" : "Start Generator" }}
         </button>
       </div>
   
@@ -63,10 +63,27 @@
       },
       itemsPerPage: Number,
       workerActive: Boolean,
+      connectionStatus: String,
+      reconnectAttempts: Number,
+      maxReconnectAttempts: Number,
+      connectionStatus: String,
     },
+    methods: {
+      getConnectionStatusColor() {
+        switch (this.connectionStatus) {
+          case 'connected': return 'green';
+          case 'connecting': return 'orange';
+          case 'reconnecting': return 'yellow';
+          default: return 'red';
+        }
+      }
+    }
   };
   </script>
   
   <style scoped>
-  /* Add any specific styles for SortPagination.vue here */
+    .connection-status {
+    margin-left: 10px;
+    font-size: 0.8em;
+  }
   </style>
