@@ -58,32 +58,82 @@ export default {
   getGenerationStatus() {
     return api.get('/generate/status');
   },
+  // Auto-reconnect logic
+  attemptReconnect(connection, onMessage, maxAttempts = 5, interval = 3000) {
+    let attempts = 0;
+    
+    const reconnect = () => {
+      if (attempts >= maxAttempts) {
+        console.error('Max reconnection attempts reached');
+        return;
+      }
+
+      attempts++;
+      console.log(`Reconnecting attempt ${attempts}/${maxAttempts}...`);
+
+      const newWs = new WebSocket('ws://localhost:5000');
+      
+      newWs.onopen = () => {
+        console.log('Reconnected successfully');
+        connection.ws = newWs;
+        connection.readyState = WebSocket.OPEN;
+        connection.onreconnect?.();
+        clearInterval(reconnectInterval);
+      };
+
+      newWs.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          onMessage(message);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+    };
+
+    const reconnectInterval = setInterval(reconnect, interval);
+    connection.onreconnect = () => {
+      clearInterval(reconnectInterval);
+    };
+
+    // Initial reconnect attempt
+    reconnect();
+  },
   
-  // WebSocket setup
+  // api.js - WebSocket enhancements
   setupWebSocket(onMessage) {
+
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+
     const ws = new WebSocket('ws://localhost:5000');
     
     ws.onopen = () => {
       console.log('WebSocket connected');
+      reconnectAttempts = 0; // Reset attempts on successful connection
     };
-    
+  
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
       onMessage(message);
     };
-    
+  
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
     };
-    
+  
     ws.onclose = () => {
       console.log('WebSocket disconnected');
+      if (reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++;
+        setTimeout(() => {
+          setupWebSocket(onMessage); // Retry connection
+        }, 1000 * reconnectAttempts);
+      } else {
+        console.error('Max reconnection attempts reached');
+      }
     };
-    
-    return {
-      send: (data) => ws.send(JSON.stringify(data)),
-      close: () => ws.close(),
-    };
-  }
-
+  
+    return ws;
+  },
 };

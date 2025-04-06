@@ -6,6 +6,7 @@
       :instruments="instruments"
       :selectedGenres="selectedGenres"
       :selectedInstruments="selectedInstruments"
+      :musicSheets="musicSheets"
       @toggleGenre="toggleGenre"
       @toggleInstrument="toggleInstrument"
       @clearFilters="clearFilters"
@@ -79,6 +80,11 @@ export default {
       instruments: ["Guitar", "Piano", "Drums"],
       musicSheets: [], // Replace state.musicSheets with local data
       totalItems: 0, // Total number of items for pagination
+      connectionStatus: 'disconnected', // Connection status for WebSocket
+      reconnectAttempts: 0,
+      maxReconnectAttempts: 5, // Maximum number of reconnection attempts
+      lastWebSocketError: null, // Store the last WebSocket message
+      isManualDisconnect: false, // Flag to indicate manual disconnection
     };
   },
   computed: {
@@ -204,32 +210,95 @@ export default {
     },
     toggleWorker() {
       if (this.workerActive) {
-        this.wsConnection.send({
-          type: 'TOGGLE_GENERATION',
-          active: false
-        });
+        // Stop generator
+        this.isManualDisconnect = true;
         if (this.wsConnection) {
+          this.wsConnection.send(JSON.stringify({
+            type: 'TOGGLE_GENERATION',
+            active: false
+          }));
           this.wsConnection.close();
         }
         this.workerActive = false;
+        this.connectionStatus = 'disconnected';
       } else {
-        this.wsConnection = api.setupWebSocket((message) => {
-          if (message.type === 'NEW_SHEET') {
-            // Add new sheet to beginning of list
-            this.musicSheets.unshift(message.data);
-            this.totalItems += 1;
-          }
-        });
-        
-        this.wsConnection.send({
+        // Start generator
+        this.isManualDisconnect = false;
+        this.connectionStatus = 'connecting';
+        this.setupWebSocket();
+      }
+    },
+
+    setupWebSocket() {
+      this.wsConnection = api.setupWebSocket((message) => {
+        if (message.type === 'NEW_SHEET') {
+          this.musicSheets.unshift(message.data);
+          this.totalItems += 1;
+        } else if (message.type === 'STATUS_UPDATE') {
+          this.handleStatusUpdate(message);
+        }
+      });
+
+      this.wsConnection.onopen = () => {
+        this.connectionStatus = 'connected';
+        this.reconnectAttempts = 0;
+        this.wsConnection.send(JSON.stringify({
           type: 'TOGGLE_GENERATION',
           active: true,
           interval: 2000
-        });
-        
+        }));
         this.workerActive = true;
+      };
+
+      this.wsConnection.onreconnect = () => {
+        if (!this.isManualDisconnect) {
+          this.connectionStatus = 'connected';
+          this.wsConnection.send({
+            type: 'TOGGLE_GENERATION',
+            active: true,
+            interval: 2000
+          });
+        }
+      };
+
+      this.wsConnection.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        this.connectionStatus = 'error';
+      };
+
+      this.wsConnection.onclose = () => {
+        this.connectionStatus = 'disconnected';
+        if (!this.isManualDisconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          setTimeout(() => {
+            this.setupWebSocket();
+          }, 1000 * this.reconnectAttempts);
+        }
+      };
+
+    },
+
+    handleStatusUpdate(message) {
+      if (message.status === 'reconnecting') {
+        this.connectionStatus = 'reconnecting';
+        this.reconnectAttempts = message.attempt;
+      }
+      // Handle other status updates if needed
+    },
+
+    getConnectionStatusColor() {
+      switch (this.connectionStatus) {
+        case 'connected': return 'green';
+        case 'connecting': return 'orange';
+        case 'reconnecting': return 'yellow';
+        default: return 'red';
       }
     },
+
+    isWebSocketOpen() {
+      return this.wsConnection && this.wsConnection.readyState === WebSocket.OPEN;
+    },
+
     openItem(item) {
       if (item && item.id) {
         this.$router.push({ name: "ViewSheet", params: { id: item.id } });
@@ -255,6 +324,7 @@ export default {
     });
   },
   beforeUnmount() {
+    this.isManualDisconnect = true; // Set flag to indicate manual disconnection
     if (this.wsConnection) {
       this.wsConnection.close();
     }

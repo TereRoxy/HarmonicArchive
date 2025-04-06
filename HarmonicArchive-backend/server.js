@@ -3,7 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const WebSocket = require('ws');
-const {generateMusicSheet} = require('./generateMusicSheet.js'); // Adjust the path as necessary
+const generateMusicSheet = require('./generateMusicSheet.js'); // Adjust the path as necessary
 const axios = require('axios');
 
 const app = express();
@@ -62,6 +62,7 @@ let isGenerating = false;
 function startGenerating(interval = 5000) {
   if (isGenerating) return;
   isGenerating = true;
+  broadcastStatus(); // Broadcast initial status
   
   generationInterval = setInterval(() => {
     const newId = Date.now().toString();
@@ -87,6 +88,7 @@ function stopGenerating() {
   if (!isGenerating) return;
   clearInterval(generationInterval);
   isGenerating = false;
+  broadcastStatus(); // Broadcast final status
   console.log('Stopped generating music sheets');
 }
 
@@ -99,23 +101,63 @@ const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
   console.log('WebSocket connection established');
-  
+  ws.isAlive = true;
+
+  // Heartbeat check
+  const heartbeatInterval = setInterval(() => {
+    if (ws.isAlive === false) {
+      console.log('Terminating unresponsive connection');
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  }, 30000);
+
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
+
   ws.on('message', (message) => {
-    const data = JSON.parse(message);
-    
-    if (data.type === 'TOGGLE_GENERATION') {
-      if (data.active) {
-        startGenerating(data.interval || 5000);
-      } else {
-        stopGenerating();
+    try {
+      const data = JSON.parse(message);
+      
+      if (data.type === 'TOGGLE_GENERATION') {
+        if (data.active) {
+          startGenerating(data.interval || 5000);
+        } else {
+          stopGenerating();
+        }
       }
+    } catch (error) {
+      console.error('Error processing WebSocket message:', error);
     }
   });
-  
+
   ws.on('close', () => {
+    clearInterval(heartbeatInterval);
     console.log('WebSocket connection closed');
   });
+
+  // Send initial status
+  ws.send(JSON.stringify({
+    type: 'STATUS_UPDATE',
+    status: 'connected',
+    isGenerating
+  }));
 });
+
+// Broadcast status to all clients
+function broadcastStatus() {
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'STATUS_UPDATE',
+        status: 'connected',
+        isGenerating
+      }));
+    }
+  });
+}
 
 // Add new endpoint to control generation
 app.post('/api/generate', (req, res) => {

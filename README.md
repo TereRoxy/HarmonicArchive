@@ -20,3 +20,14 @@ The project is currently under development. The initial focus is on designing th
 - **Backend**: Node.js (Express)
 - **API**: RESTful API with CORS support
 - **Database**: TBD
+
+## Requirements
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+- Vue CLI (v4 or higher)
+- Chart.js (v2.9 or higher)
+- Axios (v0.21 or higher)
+- Vite (v2.0 or higher)
+- Vue Router (v4.0 or higher)
+- Vitest (v2.0 or higher)
+- PDF.js (v2.0 or higher)
