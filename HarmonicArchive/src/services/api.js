@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // Changed to match server port
+  baseURL: 'http://192.168.100.6:5000/api', // Changed to match server port
   headers: {
     'Content-Type': 'application/json'
   }
@@ -12,7 +12,7 @@ export const getPdfUrl = (path) => {
     console.error('Invalid path provided to getPdfUrl:', path);
     return null;
   }
-  return `http://localhost:5000${path}`;
+  return `http://192.168.100.6:5000${path}`;
 };
 
 export default {
@@ -71,7 +71,7 @@ export default {
       attempts++;
       console.log(`Reconnecting attempt ${attempts}/${maxAttempts}...`);
 
-      const newWs = new WebSocket('ws://localhost:5000');
+      const newWs = new WebSocket('ws://192.168.100.6:5000');
       
       newWs.onopen = () => {
         console.log('Reconnected successfully');
@@ -106,7 +106,7 @@ export default {
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 5;
 
-    const ws = new WebSocket('ws://localhost:5000');
+    const ws = new WebSocket('ws://192.168.100.6:5000');
     
     ws.onopen = () => {
       console.log('WebSocket connected');

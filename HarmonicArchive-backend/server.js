@@ -8,6 +8,7 @@ const axios = require('axios');
 
 const app = express();
 const PORT = 5000;
+const IP = '192.168.100.6';
 
 // Enhanced CORS configuration
 app.use(cors({
@@ -93,8 +94,8 @@ function stopGenerating() {
 }
 
 // Add WebSocket endpoint
-const server = app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+const server = app.listen(PORT, IP, () => {
+  console.log(`Server running on http://${IP}:${PORT}`);
 });
 
 const wss = new WebSocket.Server({ server });
@@ -417,8 +418,8 @@ app.delete('/api/sheets/:id', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// app.listen(PORT, IP, () => {
+//   console.log(`Server running on http://${IP}:${PORT}`);
+// });
 
 module.exports = app; // Export the app for testing
