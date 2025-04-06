@@ -97,7 +97,7 @@
           <button type="button" class="cancel-btn" @click="goBack">
             Cancel
           </button>
-          <button type="submit" class="upload-btn" @click="submitForm" >Upload</button>
+          <button type="submit" class="upload-btn">Upload</button>
         </div>
       </form>
     </div>
@@ -105,7 +105,7 @@
 </template>
 
 <script>
-import { state } from "../sharedstate";
+import api from "../services/api"; // Import the API
 
 export default {
   data() {
@@ -166,30 +166,37 @@ export default {
         this.selectedFile // Ensure a file is selected
       );
     },
-    // In your submit handler method:
     async submitForm() {
-    if (!this.formDataValid()) return;
+      if (!this.formDataValid()) {
+        console.log("Form data is invalid. Submission aborted.");
+        alert("Please fill in all fields correctly and select a file.");
+        return;
+      }
 
-    const newMusicSheet = {
-      id: Date.now(), // Generate unique ID
-      title: this.formData.title,
-      composer: this.formData.composer,
-      year: this.formData.year,
-      key: this.formData.key,
-      genres: this.formData.genres.split(',').map((g) => g.trim()), // Split genres string into an array
-      instruments: this.formData.instruments.split(',').map((i) => i.trim()), // Split instruments string into an array
-      link: this.selectedFile ? URL.createObjectURL(this.selectedFile) : null, // Generate file link if file is selected
-      filetype: "PDF",
-    };
+      const newMusicSheet = {
+        title: this.formData.title,
+        composer: this.formData.composer,
+        year: this.formData.year,
+        key: this.formData.key,
+        genres: this.formData.genres.split(",").map((g) => g.trim()), // Split genres string into an array
+        instruments: this.formData.instruments.split(",").map((i) => i.trim()), // Split instruments string into an array
+        filetype: this.selectedFile ? this.selectedFile.type : "PDF",
+      };
 
-    // Update the reactive state
-    state.musicSheets = [...state.musicSheets, newMusicSheet];
+      console.log("Submitting new music sheet:", newMusicSheet);
 
-    this.goBack(); // Navigate back to the previous page
-    this.$emit("music-sheet-created", newMusicSheet); // Emit the updated music sheets
-    this.resetForm(); // Reset the form after submission
+      try {
+        // Upload the music sheet using the API
+        const response = await api.addSheet(newMusicSheet);
+        console.log("Music sheet uploaded successfully:", response.data);
+
+        this.goBack(); // Navigate back to the previous page
+        this.resetForm(); // Reset the form after submission
+      } catch (error) {
+        console.error("Error uploading music sheet:", error);
+      }
     },
-}
+  },
 };
 </script>
 

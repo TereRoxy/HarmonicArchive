@@ -44,6 +44,7 @@
             <option value="12">12 per page</option>
             <option value="24">24 per page</option>
             <option value="48">48 per page</option>
+            <option value="infinite">All</option>
           </select>
         </div>
       </div>
@@ -56,7 +57,10 @@
       sortBy: String,
       sortOrder: String,
       currentPage: Number,
-      totalPages: Number,
+      totalPages: {
+        type: Number, 
+        default: 1
+      },
       itemsPerPage: Number,
       workerActive: Boolean,
     },
