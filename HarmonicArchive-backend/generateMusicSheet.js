@@ -22,3 +22,5 @@ function generateMusicSheet(id) {
       link,
     };
   }
+
+  module.exports = generateMusicSheet;
