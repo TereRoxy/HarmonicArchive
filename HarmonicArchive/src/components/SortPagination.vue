@@ -44,7 +44,7 @@
             <option value="12">12 per page</option>
             <option value="24">24 per page</option>
             <option value="48">48 per page</option>
-            <option value="infinite">All</option>
+            <option value="all">All</option>
           </select>
         </div>
       </div>
@@ -61,29 +61,14 @@
         type: Number, 
         default: 1
       },
-      itemsPerPage: Number,
+      itemsPerPage : {
+        default: 6,
+      },
       workerActive: Boolean,
-      connectionStatus: String,
-      reconnectAttempts: Number,
-      maxReconnectAttempts: Number,
-      connectionStatus: String,
     },
-    methods: {
-      getConnectionStatusColor() {
-        switch (this.connectionStatus) {
-          case 'connected': return 'green';
-          case 'connecting': return 'orange';
-          case 'reconnecting': return 'yellow';
-          default: return 'red';
-        }
-      }
-    }
   };
   </script>
   
   <style scoped>
-    .connection-status {
-    margin-left: 10px;
-    font-size: 0.8em;
-  }
+
   </style>

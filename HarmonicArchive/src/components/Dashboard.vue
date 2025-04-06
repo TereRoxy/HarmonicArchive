@@ -204,7 +204,7 @@ export default {
       }
     },
     changeItemsPerPage(itemsPerPage) {
-      this.itemsPerPage = itemsPerPage === 'infinite' ? Number.MAX_SAFE_INTEGER : parseInt(itemsPerPage);
+      this.itemsPerPage = itemsPerPage === 'all' ? Number.MAX_SAFE_INTEGER : parseInt(itemsPerPage);
       this.currentPage = 1;
       this.fetchMusicSheets();
     },
@@ -286,15 +286,6 @@ export default {
       // Handle other status updates if needed
     },
 
-    getConnectionStatusColor() {
-      switch (this.connectionStatus) {
-        case 'connected': return 'green';
-        case 'connecting': return 'orange';
-        case 'reconnecting': return 'yellow';
-        default: return 'red';
-      }
-    },
-
     isWebSocketOpen() {
       return this.wsConnection && this.wsConnection.readyState === WebSocket.OPEN;
     },
@@ -308,7 +299,7 @@ export default {
     }
   },
   created() {
-    this.getMusicSheets(); // Fetch data when the component is created
+    this.fetchMusicSheets(); // Fetch data when the component is created
 
       // Check initial generation status
     api.getGenerationStatus().then(response => {
