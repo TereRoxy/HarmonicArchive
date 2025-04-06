@@ -17,6 +17,6 @@ The project is currently under development. The initial focus is on designing th
 
 ## Tech Stack
 - **Frontend**: Vue.js, Chart.js
-- **Backend**: TBD
-- **API**: REST API
+- **Backend**: Node.js (Express)
+- **API**: RESTful API with CORS support
 - **Database**: TBD
