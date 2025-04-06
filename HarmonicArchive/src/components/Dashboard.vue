@@ -6,6 +6,7 @@
       :instruments="instruments"
       :selectedGenres="selectedGenres"
       :selectedInstruments="selectedInstruments"
+      :musicSheets="musicSheets"
       @toggleGenre="toggleGenre"
       @toggleInstrument="toggleInstrument"
       @clearFilters="clearFilters"

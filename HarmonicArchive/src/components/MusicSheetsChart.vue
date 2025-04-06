@@ -42,33 +42,40 @@ export default {
   },
   data() {
     return {
-      musicSheets: [],
-      isLoading: true,
-      error: null,
+      localMusicSheets: [...this.musicSheets],
+      error: false,
+      isLoading: false,
     };
+  },
+  props: {
+    musicSheets: {
+      type: Array,
+      required: true,
+    }
+  },
+  watch: {
+    // Watch for changes in the prop and update the local copy
+    musicSheets: {
+      handler(newValue) {
+        this.localMusicSheets = [...newValue];
+      },
+      deep: true,
+    },
   },
   computed: {
     chartData() {
-      // Ensure we have valid data to work with
-      if (!Array.isArray(this.musicSheets)) {
+      if (!Array.isArray(this.localMusicSheets)) {
         return this.emptyChartData();
       }
 
-      // Process the data into decades
       const decadeCounts = {};
-      
-      this.musicSheets.forEach((sheet) => {
-        // Skip if year is missing or invalid
+      this.localMusicSheets.forEach((sheet) => {
         if (!sheet.year || typeof sheet.year !== 'number') return;
-        
         const decade = Math.floor(sheet.year / 10) * 10;
         decadeCounts[decade] = (decadeCounts[decade] || 0) + 1;
       });
 
-      // Get sorted decades
       const decades = Object.keys(decadeCounts).map(Number).sort((a, b) => a - b);
-      
-      // Create labels and data arrays
       const labels = decades.map(decade => `${decade}s`);
       const data = decades.map(decade => decadeCounts[decade]);
 
@@ -135,39 +142,6 @@ export default {
     },
   },
   methods: {
-    async fetchMusicSheets() {
-      this.isLoading = true;
-      this.error = null;
-      
-      try {
-        const response = await api.getSheets();
-        
-        // More flexible response handling
-        if (Array.isArray(response.data)) {
-          this.musicSheets = response.data;
-        } else if (Array.isArray(response)) {
-          // Handle case where response is the array directly
-          this.musicSheets = response;
-        } else if (response.data && Array.isArray(response.data.data)) {
-          // Handle paginated response format
-          this.musicSheets = response.data.data;
-        } else {
-          console.warn("API response format not recognized, attempting to use raw response");
-          this.musicSheets = Array.isArray(response) ? response : [];
-        }
-        
-        if (!this.musicSheets.length) {
-          console.log("API returned empty array");
-        }
-      } catch (err) {
-        console.error("Error fetching music sheets:", err);
-        this.error = err.message || "Failed to load data";
-        this.musicSheets = [];
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    
     emptyChartData() {
       return {
         labels: [],
@@ -179,9 +153,6 @@ export default {
       };
     }
   },
-  created() {
-    this.fetchMusicSheets();
-  }
 };
 </script>
 
@@ -189,10 +160,12 @@ export default {
 .chart-container {
   position: relative;
   height: 300px;
+  width: 250px;
+  max-width: 300px;
   background-color: #2c3e50;
   border-radius: 8px;
   padding: 20px;
-  margin: 15px;
+  margin: 15px auto;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
