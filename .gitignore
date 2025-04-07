@@ -26,3 +26,18 @@ dist-ssr
 # Coverage directory used by tools like istanbul
 coverage
 *.vue.html
+
+# Uploaded files on the server
+*.zip
+*.pdf
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+*.ico

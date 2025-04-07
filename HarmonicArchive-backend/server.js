@@ -8,17 +8,115 @@ const axios = require('axios');
 
 const app = express();
 const PORT = 5000;
-const IP = '192.168.100.6';
+const IP = '192.168.100.2';
+
 
 // Enhanced CORS configuration
 app.use(cors({
-  origin: ['http://192.168.100.6:5173', "http://localhost:5173"],
+  origin: ['http://192.168.100.2:5173', "http://localhost:5173"],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type'],
   exposedHeaders: ['Content-Disposition'] // Add this if you need to handle downloads
 }));
 
 app.use(bodyParser.json());
+
+
+// Add these constants at the top
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+const UPLOAD_DIR = path.join(__dirname, 'uploads');
+
+
+// Add these at the top with other requires
+const fs = require('fs');
+const multer = require('multer');
+
+// Configure chunk storage
+const chunkStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const fileId = req.body.fileId;
+    const tempDir = path.join(__dirname, 'uploads', 'temp', fileId);
+    
+    // Create temp directory if it doesn't exist
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    cb(null, tempDir);
+  },
+  filename: (req, file, cb) => {
+    // Save with chunk index as filename
+    cb(null, `${req.body.chunkIndex}.part`);
+  }
+});
+
+// Configure storage for uploaded files
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // PDFs go to public/pdfs, videos go to uploads
+    const dest = file.mimetype === 'application/pdf' ? 
+      path.join(__dirname, 'public', 'pdfs') : 
+      path.join(__dirname, 'uploads');
+    cb(null, dest);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `${uniqueSuffix}-${file.originalname}`);
+  }
+});
+
+const chunkUpload = multer({ storage: chunkStorage });
+
+// Add these endpoints
+app.post('/api/upload/video/start', (req, res) => {
+  const fileId = Date.now().toString();
+  res.json({ fileId, chunkSize: 5 * 1024 * 1024 }); // 5MB chunks
+});
+
+app.post('/api/upload/video/chunk', chunkUpload.single('chunk'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No chunk uploaded' });
+  }
+  
+  res.json({ 
+    success: true,
+    chunkIndex: req.body.chunkIndex,
+    fileId: req.body.fileId
+  });
+});
+
+app.post('/api/upload/video/complete', (req, res) => {
+  const { fileId, fileName } = req.body;
+  const tempDir = path.join(__dirname, 'uploads', 'temp', fileId);
+  const finalPath = path.join(__dirname, 'uploads', `${fileId}_${fileName}`);
+  
+  try {
+    // Get all chunk files
+    const chunks = fs.readdirSync(tempDir)
+      .filter(f => f.endsWith('.part'))
+      .sort((a, b) => parseInt(a) - parseInt(b));
+    
+    // Merge chunks
+    const writeStream = fs.createWriteStream(finalPath);
+    for (const chunk of chunks) {
+      const chunkPath = path.join(tempDir, chunk);
+      writeStream.write(fs.readFileSync(chunkPath));
+      fs.unlinkSync(chunkPath); // Delete chunk after merging
+    }
+    writeStream.end();
+    
+    // Clean up
+    fs.rmdirSync(tempDir);
+    
+    res.json({ 
+      success: true,
+      filePath: `/uploads/${fileId}_${fileName}`
+    });
+  } catch (error) {
+    console.error('Error merging chunks:', error);
+    res.status(500).json({ error: 'Failed to merge chunks' });
+  }
+});
 
 // Serve static files from the "public/pdfs" directory
 // Serve static files from the "public/pdfs" directory
@@ -359,14 +457,54 @@ app.get('/api/sheets/:id', (req, res) => {
   }
 });
 
-// Create new sheet
-app.post('/api/sheets', validateMusicSheet, (req, res) => {
-  const newSheet = {
-    id: Date.now().toString(),
-    ...req.body
-  };
-  musicSheets.push(newSheet);
-  res.status(201).json(newSheet);
+
+const upload = multer( {storage} ); // Adjust the destination as needed
+// In server.js, update the /api/sheets endpoint
+app.post('/api/sheets', upload.fields([{ name: 'musicFile', maxCount: 1 }, { name: 'videoFile', maxCount: 1 }]), async (req, res) => {
+  try {
+    // Extract form data
+    const { title, composer, year, key, genres, instruments } = req.body;
+    
+    // Process genres and instruments from strings to arrays
+    const genresArray = typeof genres === 'string' ? 
+      genres.split(',').map(g => g.trim()) : 
+      (Array.isArray(genres) ? genres : []);
+    
+    const instrumentsArray = typeof instruments === 'string' ? 
+      instruments.split(',').map(i => i.trim()) : 
+      (Array.isArray(instruments) ? instruments : []);
+
+    // Process uploaded files
+    const musicFile = req.files['musicFile'] ? req.files['musicFile'][0] : null;
+    const videoFile = req.files['videoFile'] ? req.files['videoFile'][0] : null;
+
+    // Generate file paths
+    const musicFilePath = musicFile ? `/pdfs/${musicFile.filename}` : null;
+    const videoFilePath = videoFile ? `/uploads/${videoFile.filename}` : null;
+
+    // Create new sheet object
+    const newSheet = {
+      id: Date.now().toString(),
+      title,
+      composer,
+      year: parseInt(year),
+      key,
+      genres: genresArray,
+      instruments: instrumentsArray,
+      link: musicFilePath,
+      videoLink: videoFilePath,
+      createdAt: new Date().toISOString()
+    };
+
+    // Add to mock database
+    musicSheets.push(newSheet);
+
+    // Send response
+    res.status(201).json(newSheet);
+  } catch (error) {
+    console.error('Error creating new sheet:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 // Update sheet

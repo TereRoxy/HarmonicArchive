@@ -2,22 +2,74 @@
   <div class="container">
     <!-- Left Section: Drag and Drop or Choose File -->
     <div class="upload-area">
-      <div class="drag-drop-area" @dragover.prevent @drop.prevent="handleDrop">
+      <div class="drag-drop-area small" @dragover.prevent @drop.prevent="handleDrop('music')">
         <div class="overlay">
           <input
-            ref="fileInput"
+            ref="musicFileInput"
+            id="musicFileInput"
             type="file"
             class="hidden"
-            @change="handleFileSelect"
+            @change="handleFileSelect('music', $event)"
+            accept=".pdf, .jpg, .jpeg, .png, .gif"
           />
-          <div class="text-center" @click="triggerFileInput">
+          <div class="text-center" @click="triggerFileInput('music')">
             <p class="drag-drop-text">
-              {{ selectedFile ? selectedFile.name : "Drag and Drop or..." }}
+              {{ selectedMusicFile ? selectedMusicFile.name : "Drag and Drop or..." }}
             </p>
             <button class="choose-file-btn">Choose file</button>
           </div>
         </div>
       </div>
+
+      <!-- Video File Drag and Drop -->
+      <div class="drag-drop-area small" @dragover.prevent @drop.prevent="handleDrop('video')">
+        <div class="overlay">
+          <input
+            ref="videoFileInput"
+            id="videoFileInput"
+            accept=".mp4, .avi, .mov, .wmv"
+            type="file"
+            class="hidden"
+            @change="handleFileSelect('video', $event)"
+          />
+          <div class="text-center" @click="triggerFileInput('video')">
+            <p class="drag-drop-text">
+              {{ selectedVideoFile ? selectedVideoFile.name : "Drag and Drop Video File or..." }}
+            </p>
+            <button class="choose-file-btn">Choose Video File</button>
+          </div>
+          
+          <div v-if="videoUploadStatus !== 'idle'" class="video-upload-status">
+            <div class="status-message">
+              {{ 
+                videoUploadStatus === 'preparing' ? 'Preparing...' :
+                videoUploadStatus === 'uploading' ? 'Uploading...' :
+                videoUploadStatus === 'completed' ? 'Upload complete!' :
+                videoUploadStatus === 'error' ? 'Upload failed' : ''
+              }}
+            </div>
+            
+            <div v-if="videoUploadStatus === 'uploading'" class="progress-container">
+              <div class="progress-bar">
+                <div class="progress" :style="{ width: videoUploadProgress + '%' }"></div>
+              </div>
+              <div class="progress-text">{{ videoUploadProgress }}%</div>
+              
+              <div v-if="videoChunkProgress.length > 1" class="chunk-progress">
+                <div 
+                  v-for="(progress, index) in videoChunkProgress" 
+                  :key="index" 
+                  class="chunk-progress-bar"
+                  :style="{ width: (100 / videoChunkProgress.length) + '%', height: '4px', background: progress === 100 ? '#4CAF50' : progress > 0 ? '#2196F3' : '#e0e0e0' }"
+                  :title="`Chunk ${index + 1}: ${progress}%`"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
 
     <!-- Right Section: Form Area -->
@@ -106,6 +158,7 @@
 
 <script>
 import api from "../services/api"; // Import the API
+import axios from "axios";
 
 export default {
   data() {
@@ -118,25 +171,115 @@ export default {
         genres: "",
         instruments: "",
       },
-      selectedFile: null,
+      selectedMusicFile: null,
+      selectedVideoFile: null,
+      uploadProgress: 0,
+      videoUploadProgress: 0,
+      videoChunkProgress: [],
+      videoUploadStatus: 'idle',
+      videoFileId: null,
     };
   },
   methods: {
-    handleDrop(event) {
+    handleDrop(type, event) {
       const files = event.dataTransfer.files;
       if (files.length > 0) {
-        this.selectedFile = files[0];
+        if (type === "music") {
+          this.selectedMusicFile = files[0];
+        } else if (type === "video") {
+          this.selectedVideoFile = files[0];
+        }
       }
     },
-    triggerFileInput() {
-      this.$refs.fileInput.click();
+    triggerFileInput(type) {
+      if (type === "music") {
+        this.$refs.musicFileInput.click();
+      } else if (type === "video") {
+        this.$refs.videoFileInput.click();
+      }
     },
-    handleFileSelect(event) {
+
+    async handleFileSelect(type, event) {
       const file = event.target.files[0];
       if (file) {
-        this.selectedFile = file;
+        if (type === "music") {
+          this.selectedMusicFile = file;
+        } else if (type === "video") {
+          this.selectedVideoFile = file;
+          this.videoUploadStatus = 'preparing';
+          await this.prepareVideoUpload(file);
+        }
       }
     },
+
+    async prepareVideoUpload(file) {
+      try {
+        // Start the upload session
+        const response = await api.uploadVideo.start({
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type
+        });
+        
+        this.videoFileId = response.data.fileId;
+        this.videoChunkProgress = Array(Math.ceil(file.size / response.data.chunkSize)).fill(0);
+        this.videoUploadStatus = 'uploading';
+        
+        // Upload chunks
+        await this.uploadVideoChunks(file, response.data.chunkSize);
+        
+        // Complete the upload
+        const completeResponse = await api.uploadVideo.complete(
+          this.videoFileId,
+          file.name,
+          file.type
+        );
+        
+        this.videoUploadStatus = 'completed';
+        this.selectedVideoFile.serverFileName = completeResponse.data.fileName;
+      } catch (error) {
+        console.error('Video upload error:', error);
+        this.videoUploadStatus = 'error';
+      }
+    },
+    
+    async uploadVideoChunks(file, chunkSize) {
+      const totalChunks = Math.ceil(file.size / chunkSize);
+      
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(file.size, start + chunkSize);
+        const chunk = file.slice(start, end);
+        
+        try {
+          await api.uploadVideo.chunk(
+            this.videoFileId,
+            chunk,
+            i,
+            (progressEvent) => {
+              const chunkProgress = Math.round(
+                (progressEvent.loaded / progressEvent.total) * 100
+              );
+              
+              // Update progress for this chunk
+              this.videoChunkProgress[i] = chunkProgress;
+              this.videoChunkProgress = [...this.videoChunkProgress];
+              
+              // Calculate overall progress
+              const totalProgress = this.videoChunkProgress.reduce(
+                (sum, progress) => sum + progress, 0
+              ) / totalChunks;
+              
+              this.videoUploadProgress = Math.round(totalProgress);
+            }
+          );
+        } catch (error) {
+          console.error(`Error uploading chunk ${i}:`, error);
+          throw error;
+        }
+      }
+    },
+
     resetForm() {
       this.formData = {
         title: "",
@@ -146,7 +289,9 @@ export default {
         genres: "",
         instruments: "",
       };
-      this.selectedFile = null;
+      this.selectedMusicFile = null;
+      this.selectedVideoFile = null;
+      this.uploadProgress = 0;
     },
     goBack() {
       this.$router.go(-1);
@@ -163,7 +308,7 @@ export default {
         keyRegex.test(this.formData.key) &&
         titleRegex.test(this.formData.genres) &&
         titleRegex.test(this.formData.instruments) &&
-        this.selectedFile // Ensure a file is selected
+        this.selectedMusicFile // Ensure a file is selected
       );
     },
     async submitForm() {
@@ -173,27 +318,32 @@ export default {
         return;
       }
 
-      const newMusicSheet = {
-        title: this.formData.title,
-        composer: this.formData.composer,
-        year: this.formData.year,
-        key: this.formData.key,
-        genres: this.formData.genres.split(",").map((g) => g.trim()), // Split genres string into an array
-        instruments: this.formData.instruments.split(",").map((i) => i.trim()), // Split instruments string into an array
-        filetype: this.selectedFile ? this.selectedFile.type : "PDF",
-      };
+      const formData = new FormData();
+      formData.append("title", this.formData.title);
+      formData.append("composer", this.formData.composer);
+      formData.append("year", this.formData.year);
+      formData.append("key", this.formData.key);
+      formData.append("genres", this.formData.genres);
+      formData.append("instruments", this.formData.instruments);
+      formData.append("musicFile", this.selectedMusicFile);
 
-      console.log("Submitting new music sheet:", newMusicSheet);
+      // Add video file if uploaded
+      if (this.selectedVideoFile?.serverFileName) {
+        formData.append("videoFile", this.selectedVideoFile.serverFileName);
+      }
 
       try {
-        // Upload the music sheet using the API
-        const response = await api.addSheet(newMusicSheet);
-        console.log("Music sheet uploaded successfully:", response.data);
+        const response = await api.uploadWithProgress(formData, (progressEvent) => {
+          if (progressEvent.total) {
+            this.uploadProgress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+          }
+        });
 
-        this.goBack(); // Navigate back to the previous page
-        this.resetForm(); // Reset the form after submission
+        console.log("Upload successful:", response.data);
+        this.resetForm();
+        this.goBack();
       } catch (error) {
-        console.error("Error uploading music sheet:", error);
+        console.error("Error uploading files:", error);
       }
     },
   },

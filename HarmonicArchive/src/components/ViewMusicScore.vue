@@ -26,7 +26,7 @@
         <div class="music-score-year">Year: {{ musicSheet.year }}</div>
 
         <div class="music-score-actions">
-          <button class="action-button download-button">Download</button>
+          <button class="action-button download-button" @click="downloadFiles">Download</button>
           <button class="action-button collection-button">
             Add to a collection
           </button>
@@ -199,6 +199,44 @@ export default {
         } catch (error) {
           console.error("Error deleting music sheet:", error);
         }
+      }
+    },
+
+    async downloadFiles() {
+      try {
+        // Download the PDF file
+        if (this.musicSheet.link) {
+          await this.downloadFile(this.musicSheet.link, `${this.musicSheet.title}.pdf`);
+        }
+
+        // Download the video file (if it exists)
+        if (this.musicSheet.videoLink) {
+          await this.downloadFile(this.musicSheet.videoLink, `${this.musicSheet.title}-video.mp4`);
+        }
+
+        alert("Files downloaded successfully!");
+      } catch (error) {
+        console.error("Error downloading files:", error);
+        alert("An error occurred while downloading the files.");
+      }
+    },
+
+    async downloadFile(url, filename) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch file: ${url}`);
+        }
+
+        const blob = await response.blob();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error("Error downloading file:", error);
       }
     },
   },

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://192.168.100.6:5000/api', // Changed to match server port
+  baseURL: 'http://192.168.100.2:5000/api', // Changed to match server port
   headers: {
     'Content-Type': 'application/json'
   }
@@ -12,7 +12,7 @@ export const getPdfUrl = (path) => {
     console.error('Invalid path provided to getPdfUrl:', path);
     return null;
   }
-  return `http://192.168.100.6:5000${path}`;
+  return `http://192.168.100.2:5000${path}`;
 };
 
 export default {
@@ -48,6 +48,32 @@ export default {
 
   getMusicSheets:(params) => {
     return api.get('/music-sheets', { params });
+  },
+
+  uploadWithProgress(formData, onUploadProgress) {
+    return api.post("/sheets", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress,
+    });
+  },
+
+  // Add these methods to your api.js
+  uploadVideo: {
+    start: (fileData) => api.post('/upload/video/start', fileData),
+    chunk: (fileId, chunk, chunkIndex, totalChunks, onProgress) => {
+      const formData = new FormData();
+      formData.append('fileId', fileId);
+      formData.append('chunkIndex', chunkIndex);
+      formData.append('totalChunks', totalChunks);
+      formData.append('chunk', chunk);
+      
+      return api.post('/upload/video/chunk', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: onProgress
+      });
+    },
+    complete: (fileId, fileName) => 
+      api.post('/upload/video/complete', { fileId, fileName })
   },
 
   // New methods for generation control

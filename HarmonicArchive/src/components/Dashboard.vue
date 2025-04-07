@@ -73,7 +73,7 @@ export default {
       sortBy: "title",
       sortOrder: "asc",
       currentPage: 1,
-      itemsPerPage: 6,
+      itemsPerPage: Number.MAX_SAFE_INTEGER, // Default to all items
       worker: null,
       workerActive: false,
       genres: ["Rock", "Pop", "Classical"],
@@ -89,6 +89,9 @@ export default {
   },
   computed: {
     totalPages() {
+      if (this.itemsPerPage === 'all') {
+        return 1; // If all items are displayed, only one page
+      }
       return Math.ceil(this.totalItems / this.itemsPerPage);
     },
   },
@@ -247,7 +250,7 @@ export default {
         this.wsConnection.send(JSON.stringify({
           type: 'TOGGLE_GENERATION',
           active: true,
-          interval: 2000
+          interval: 100
         }));
         this.workerActive = true;
       };
@@ -298,10 +301,52 @@ export default {
       } else {
         console.error("Invalid item passed to openItem:", item);
       }
+    },
+    handleScroll() {
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const bottomPosition = document.documentElement.offsetHeight - 100; // 100px from the bottom
+
+    if (scrollPosition >= bottomPosition && !this.isLoadingMore && this.musicSheets.length < this.totalItems) {
+      this.isLoadingMore = true;
+      this.currentPage++;
+      this.fetchMoreMusicSheets();
     }
+  },
+
+  fetchMoreMusicSheets() {
+    const params = {
+      _page: this.currentPage,
+      _limit: this.itemsPerPage,
+      _sort: this.sortBy,
+      _order: this.sortOrder,
+    };
+
+    if (this.searchQuery) {
+      params.q = this.searchQuery;
+    }
+    if (this.selectedGenres.length) {
+      params.genres = this.selectedGenres.join(",");
+    }
+    if (this.selectedInstruments.length) {
+      params.instruments = this.selectedInstruments.join(",");
+    }
+
+    api.getMusicSheets(params)
+      .then(response => {
+        this.musicSheets = [...this.musicSheets, ...response.data.data];
+        this.totalItems = response.data.total;
+        this.isLoadingMore = false;
+      })
+      .catch(error => {
+        console.error("Error fetching more music sheets:", error);
+        this.isLoadingMore = false;
+      });
+  },
   },
   created() {
     this.fetchMusicSheets(); // Fetch data when the component is created
+
+    window.addEventListener("scroll", this.handleScroll)
 
       // Check initial generation status
     api.getGenerationStatus().then(response => {
