@@ -262,6 +262,17 @@ public class MusicSheetsController : ControllerBase
         _context.MusicSheets.Remove(musicSheet);
         await _context.SaveChangesAsync();
 
+        // Delete associated files
+        if (!string.IsNullOrEmpty(musicSheet.MusicFilePath) && System.IO.File.Exists(musicSheet.MusicFilePath))
+        {
+            System.IO.File.Delete(musicSheet.MusicFilePath);
+        }
+
+        if (!string.IsNullOrEmpty(musicSheet.VideoFilePath) && System.IO.File.Exists(musicSheet.VideoFilePath))
+        {
+            System.IO.File.Delete(musicSheet.VideoFilePath);
+        }
+
         return Ok(new { Message = "Music sheet deleted successfully." });
     }
 

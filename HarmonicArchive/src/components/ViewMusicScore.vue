@@ -145,7 +145,7 @@ export default {
       const id = this.$route.params.id;
       console.log("Fetching music sheet with id:", id); // Debugging
       try {
-        const response = await api.getSheet(id); // Use the proper API method
+        const response = await api.getMusicSheet(id); // Use the proper API method
         console.log("Music sheet fetched successfully:", response.data);
         this.musicSheet = response.data;
         console.log("PDF Source:", this.musicSheet.link);
@@ -181,7 +181,7 @@ export default {
       console.log("Saving changes for music sheet:", updatedSheet);
 
       try {
-        await api.editSheet(this.musicSheet.id, updatedSheet); // Update the sheet via API
+        await api.updateMusicSheet(this.musicSheet.id, updatedSheet); // Update the sheet via API
         console.log("Music sheet updated successfully.");
         this.musicSheet = updatedSheet; // Update the local data
         this.isEditing = false;
@@ -193,7 +193,7 @@ export default {
     async deleteMusicSheet() {
       if (window.confirm("Are you sure you want to delete this music sheet?")) {
         try {
-          await api.deleteSheet(this.musicSheet.id); // Delete the sheet via API
+          await api.deleteMusicSheet(this.musicSheet.id); // Delete the sheet via API
           console.log("Music sheet deleted successfully.");
           this.$router.push("/"); // Navigate back to the home page
         } catch (error) {

@@ -123,24 +123,41 @@ export default {
 
     api.getMusicSheets(params)
       .then(response => {
-        this.musicSheets = response.data.data;
-        this.totalItems = response.data.total;
+        this.musicSheets = response.data.data || response.data; // Handle both response formats
+        this.totalItems = response.data.total || response.data.length || 0;
       })
       .catch(error => {
         console.error("Error fetching music sheets:", error);
       });
   },
 
-    getMusicSheets(params = {}) {
+  fetchMoreMusicSheets() {
+      const params = {
+        _page: this.currentPage,
+        _limit: this.itemsPerPage,
+        _sort: this.sortBy,
+        _order: this.sortOrder,
+      };
+
+      if (this.searchQuery) {
+        params.q = this.searchQuery;
+      }
+      if (this.selectedGenres.length) {
+        params.genres = this.selectedGenres.join(",");
+      }
+      if (this.selectedInstruments.length) {
+        params.instruments = this.selectedInstruments.join(",");
+      }
+
       api.getMusicSheets(params)
         .then(response => {
-          this.musicSheets = response.data.data || response.data; // Handle both response formats
+          this.musicSheets = [...this.musicSheets, ...response.data.data || response.data];
           this.totalItems = response.data.total || response.data.length || 0;
+          this.isLoadingMore = false;
         })
         .catch(error => {
-          console.error("Error fetching music sheets:", error);
-          this.musicSheets = [];
-          this.totalItems = 0;
+          console.error("Error fetching more music sheets:", error);
+          this.isLoadingMore = false;
         });
     },
     searchItems(query) {
@@ -235,10 +252,8 @@ export default {
     setupWebSocket() {
       this.wsConnection = api.setupWebSocket((message) => {
         if (message.type === 'NEW_SHEET') {
-          //this.musicSheets.unshift(message.data);
-          //this.totalItems += 1;
-          console.log("New sheet received:", message.data);
-          console.log("Total items:", this.totalItems);
+          this.musicSheets.unshift(message.data);
+          this.totalItems += 1;
         } else if (message.type === 'STATUS_UPDATE') {
           this.handleStatusUpdate(message);
         }
@@ -255,17 +270,6 @@ export default {
         this.workerActive = true;
       };
 
-      this.wsConnection.onreconnect = () => {
-        if (!this.isManualDisconnect) {
-          this.connectionStatus = 'connected';
-          this.wsConnection.send({
-            type: 'TOGGLE_GENERATION',
-            active: true,
-            interval: 2000
-          });
-        }
-      };
-
       this.wsConnection.onerror = (error) => {
         console.error('WebSocket error:', error);
         this.connectionStatus = 'error';
@@ -280,7 +284,6 @@ export default {
           }, 1000 * this.reconnectAttempts);
         }
       };
-
     },
 
     handleStatusUpdate(message) {
@@ -349,9 +352,9 @@ export default {
     window.addEventListener("scroll", this.handleScroll)
 
       // Check initial generation status
-    api.getGenerationStatus().then(response => {
-      this.workerActive = response.data.isGenerating;
-    });
+    // api.getGenerationStatus().then(response => {
+    //   this.workerActive = response.data.isGenerating;
+    // });
     
     // Initialize WebSocket connection
     this.wsConnection = api.setupWebSocket((message) => {

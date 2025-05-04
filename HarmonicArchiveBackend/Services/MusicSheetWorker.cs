@@ -1,78 +1,86 @@
-﻿using HarmonicArchiveBackend.Data;
-using HarmonicArchiveBackend.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Net.WebSockets;
+﻿using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json;
+using HarmonicArchiveBackend.Services;
+using WebSocketManager = HarmonicArchiveBackend.Services.WebSocketManager;
 
-namespace HarmonicArchiveBackend.Services
+public class MusicSheetWorker : BackgroundService
 {
-    public class MusicSheetWorker : BackgroundService
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<MusicSheetWorker> _logger;
+    private readonly WebSocketManager _webSocketManager;
+    private bool _isRunning = false;
+
+    public MusicSheetWorker(IServiceProvider serviceProvider, ILogger<MusicSheetWorker> logger, WebSocketManager webSocketManager)
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<MusicSheetWorker> _logger;
-        private readonly WebSocketManager _webSocketManager;
-        private bool _isRunning = false;
+        _serviceProvider = serviceProvider;
+        _logger = logger;
+        _webSocketManager = webSocketManager;
+    }
 
-        public MusicSheetWorker(IServiceProvider serviceProvider, ILogger<MusicSheetWorker> logger, WebSocketManager webSocketManager)
+    public void ToggleWorker(bool isRunning)
+    {
+        _isRunning = isRunning;
+        _logger.LogInformation($"Worker is now {(isRunning ? "running" : "stopped")}.");
+    }
+
+    public async Task HandleWebSocketConnection(WebSocket webSocket)
+    {
+        try
         {
-            _serviceProvider = serviceProvider;
-            _logger = logger;
-            _webSocketManager = webSocketManager;
-        }
+            _webSocketManager.AddSocket(webSocket);
+            _logger.LogInformation("WebSocket connection established.");
 
-        public void ToggleWorker(bool isRunning)
+            var buffer = new byte[1024 * 4];
+            WebSocketReceiveResult result;
+
+            while (webSocket.State == WebSocketState.Open)
+            {
+                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    _logger.LogInformation("WebSocket connection closed.");
+                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
+                    _webSocketManager.RemoveSocket(webSocket);
+                }
+                else if (result.MessageType == WebSocketMessageType.Text)
+                {
+                    var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                    _logger.LogInformation($"Received message: {message}");
+                    await _webSocketManager.BroadcastMessageAsync($"Echo: {message}");
+                }
+            }
+        }
+        catch (Exception ex)
         {
-            _isRunning = isRunning;
+            _logger.LogError(ex, "Error in WebSocket connection.");
         }
+        finally
+        {
+            _webSocketManager.RemoveSocket(webSocket);
+        }
+    }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        try
         {
             while (!stoppingToken.IsCancellationRequested)
             {
                 if (_isRunning)
                 {
-                    try
-                    {
-                        using (var scope = _serviceProvider.CreateScope())
-                        {
-                            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                            // Generate a new music sheet
-                            var newMusicSheet = new MusicSheet
-                            {
-                                Title = new Title { Name = $"Generated Title {Guid.NewGuid()}" },
-                                Composer = new Composer { Name = $"Generated Composer {Guid.NewGuid()}" },
-                                Year = DateTime.Now.Year,
-                                Key = "C Major",
-                                MusicSheetGenres = new List<MusicSheetGenre>
-                                {
-                                    new MusicSheetGenre { Genre = new Genre { Name = "Generated Genre" } }
-                                },
-                                MusicSheetInstruments = new List<MusicSheetInstrument>
-                                {
-                                    new MusicSheetInstrument { Instrument = new Instrument { Name = "Generated Instrument" } }
-                                }
-                            };
-
-                            // Save to the database
-                            dbContext.MusicSheets.Add(newMusicSheet);
-                            await dbContext.SaveChangesAsync(stoppingToken);
-
-                            // Send the new music sheet to connected WebSocket clients
-                            var musicSheetJson = JsonSerializer.Serialize(newMusicSheet, new JsonSerializerOptions { ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles });
-                            await _webSocketManager.BroadcastMessageAsync(musicSheetJson);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error occurred while generating music sheets.");
-                    }
+                    _logger.LogInformation("Worker is running...");
+                    // Perform background tasks here
                 }
 
-                // Wait for 5 seconds before generating the next music sheet
-                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                await Task.Delay(1000, stoppingToken);
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred in the background worker.");
+            throw; // Re-throw to let the host handle it
+        }
     }
+
 }

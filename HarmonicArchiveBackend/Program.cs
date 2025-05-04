@@ -14,6 +14,9 @@ CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigins", policy =>
@@ -51,6 +54,25 @@ builder.Services.Configure<FormOptions>(options =>
 });
 
 var app = builder.Build();
+
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+        var exception = exceptionHandlerPathFeature?.Error;
+
+        if (exception != null)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(exception, "Unhandled exception occurred.");
+        }
+
+        context.Response.StatusCode = 500;
+        await context.Response.WriteAsync("An unhandled exception occurred.");
+    });
+});
 
 // Serve static files
 app.UseStaticFiles(new StaticFileOptions
