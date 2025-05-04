@@ -1,0 +1,41 @@
+﻿using System.ComponentModel.DataAnnotations;
+using HarmonicArchiveBackend.Validation;
+
+namespace HarmonicArchiveBackend.Data
+{
+    public class MusicSheetDto
+    {
+        private const string TitleRegex = @"^[a-zA-Z0-9\s\-_,.]+$";
+        private const string YearRegex = @"^\d{4}$";
+        private const string KeyRegex = @"^[a-zA-Z0-9\s\-#]+$";
+
+        [Required(ErrorMessage = "Title is required.")]
+        [RegularExpression(TitleRegex, ErrorMessage = "Invalid title.")]
+        public string Title { get; set; }
+
+        [Required(ErrorMessage = "Composer is required.")]
+        [RegularExpression(TitleRegex, ErrorMessage = "Invalid composer.")]
+        public string Composer { get; set; }
+
+        [Required(ErrorMessage = "Year is required.")]
+        [RegularExpression(YearRegex, ErrorMessage = "Invalid year.")]
+        public int Year { get; set; }
+
+        [Required(ErrorMessage = "Key is required.")]
+        [RegularExpression(KeyRegex, ErrorMessage = "Invalid key.")]
+        public string Key { get; set; }
+
+        [Required(ErrorMessage = "At least one genre is required.")]
+        [MinLength(1, ErrorMessage = "At least one genre is required.")]
+        [ValidArrayItems(TitleRegex, ErrorMessage = "Invalid genre.")]
+        public List<string> Genres { get; set; }
+
+        [Required(ErrorMessage = "At least one instrument is required.")]
+        [MinLength(1, ErrorMessage = "At least one instrument is required.")]
+        [ValidArrayItems(TitleRegex, ErrorMessage = "Invalid instrument.")]
+        public List<string> Instruments { get; set; }
+    
+        [Required(ErrorMessage = "Music file is required.")]
+        public IFormFile MusicFile { get; set; } // Accept the actual file    
+    }
+}

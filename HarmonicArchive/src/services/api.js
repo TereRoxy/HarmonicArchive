@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://192.168.100.2:5000/api', // Changed to match server port
+  baseURL: 'http://192.168.100.6:5000/api', // Changed to match server port
   headers: {
     'Content-Type': 'application/json'
   }
@@ -12,7 +12,7 @@ export const getPdfUrl = (path) => {
     console.error('Invalid path provided to getPdfUrl:', path);
     return null;
   }
-  return `http://192.168.100.2:5000${path}`;
+  return `http://192.168.100.6:5000${path}`;
 };
 
 export default {
