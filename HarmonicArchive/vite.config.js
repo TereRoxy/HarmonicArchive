@@ -14,4 +14,8 @@ export default defineConfig({
   worker: {
     format: "es", // Enable ES module format for Web Workers
   },
+  server: {
+    host: "192.168.100.6", // Listen on all network interfaces
+    port: 5173, // Optional: Specify a custom port (default is 5173)
+  },
 });
