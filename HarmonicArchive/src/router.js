@@ -14,7 +14,7 @@ const routes = [
     component: Upload 
   },
   { 
-    path: "/view", 
+    path: "/", 
     component: View,
     children: [
       {

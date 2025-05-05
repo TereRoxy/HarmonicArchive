@@ -1,5 +1,7 @@
 ﻿using System.Net.WebSockets;
-using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using HarmonicArchiveBackend.Services;
 using WebSocketManager = HarmonicArchiveBackend.Services.WebSocketManager;
 
@@ -20,67 +22,46 @@ public class MusicSheetWorker : BackgroundService
     public void ToggleWorker(bool isRunning)
     {
         _isRunning = isRunning;
-        _logger.LogInformation($"Worker is now {(isRunning ? "running" : "stopped")}.");
+        _logger.LogInformation($"MusicSheetWorker is now {(isRunning ? "running" : "stopped")}.");
     }
 
-    public async Task HandleWebSocketConnection(WebSocket webSocket)
+    // MusicSheetWorker.cs
+    public void AddWebSocket(WebSocket webSocket)
     {
-        try
-        {
-            _webSocketManager.AddSocket(webSocket);
-            _logger.LogInformation("WebSocket connection established.");
+        _webSocketManager.AddSocket(webSocket);
+    }
 
-            var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result;
-
-            while (webSocket.State == WebSocketState.Open)
-            {
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    _logger.LogInformation("WebSocket connection closed.");
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
-                    _webSocketManager.RemoveSocket(webSocket);
-                }
-                else if (result.MessageType == WebSocketMessageType.Text)
-                {
-                    var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    _logger.LogInformation($"Received message: {message}");
-                    await _webSocketManager.BroadcastMessageAsync($"Echo: {message}");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in WebSocket connection.");
-        }
-        finally
-        {
-            _webSocketManager.RemoveSocket(webSocket);
-        }
+    public void RemoveWebSocket(WebSocket webSocket)
+    {
+        _webSocketManager.RemoveSocket(webSocket);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        try
+        while (!stoppingToken.IsCancellationRequested)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            if (_isRunning)
             {
-                if (_isRunning)
+                try
                 {
-                    _logger.LogInformation("Worker is running...");
-                    // Perform background tasks here
-                }
+                    var fakeMusicSheet = MusicSheetGenerator.GenerateMusicSheets(1).First();
+                    // Add the generated music sheet to the database
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var musicSheetService = scope.ServiceProvider.GetRequiredService<MusicSheetService>();
+                        await musicSheetService.AddMusicSheetFromDtoAsync(fakeMusicSheet);
+                    }
 
-                await Task.Delay(1000, stoppingToken);
+                    var message = JsonSerializer.Serialize(fakeMusicSheet);
+                    await _webSocketManager.BroadcastMessageAsync(message);
+                    _logger.LogInformation("Sent new music sheet via WebSocket");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error in worker execution: {ex.Message}");
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred in the background worker.");
-            throw; // Re-throw to let the host handle it
+            await Task.Delay(5000, stoppingToken);
         }
     }
-
 }

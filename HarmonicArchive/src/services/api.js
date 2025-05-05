@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://192.168.100.6:5000/api',
+  baseURL: 'http://192.168.100.2:5000/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -13,13 +13,24 @@ export const getFileUrl = (path, fileType = 'music') => {
     console.error('Invalid path provided:', path);
     return null;
   }
-  return `http://192.168.100.6:5000/${path}`;
+  return `http://192.168.100.2:5000/${path}`;
 };
 
 export default {
   // Music Sheets CRUD operations
   getMusicSheets(params = {}) {
-    return api.get('/MusicSheets', { params });
+    // Set default values for pagination and sorting
+    const defaultParams = {
+      _sort: 'title',
+      _order: 'asc',
+      _page: 1,
+      _limit: 50, // Use a reasonable limit
+    };
+  
+    // Merge default params with user-provided params
+    const queryParams = { ...params, ...defaultParams };
+  
+    return api.get('/MusicSheets', { params: queryParams });
   },
 
   getMusicSheet(id) {
@@ -68,47 +79,25 @@ export default {
   },
 
   // WebSocket setup
+  // api.js
   setupWebSocket(onMessage) {
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
-    const baseUrl = '192.168.100.6:5000';
-
-    const connectWebSocket = () => {
-        const ws = new WebSocket(`ws://${baseUrl}/ws`);
-
-        ws.onopen = () => {
-            console.log('WebSocket connected');
-            reconnectAttempts = 0;
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                onMessage(message);
-            } catch (error) {
-                console.error('Error parsing WebSocket message:', error);
-            }
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket disconnected');
-            if (reconnectAttempts < maxReconnectAttempts) {
-                const delay = 1000 * Math.min(reconnectAttempts + 1, 5); // Exponential backoff up to 5s
-                reconnectAttempts++;
-                console.log(`Attempting reconnect (${reconnectAttempts}/${maxReconnectAttempts}) in ${delay / 1000}s`);
-                setTimeout(connectWebSocket, delay);
-            } else {
-                console.error('Max reconnect attempts reached. WebSocket connection failed.');
-            }
-        };
-
-        return ws;
-      };
-
-      return connectWebSocket(); // Call the function to establish the initial connection
+    const baseUrl = '192.168.100.2:5000';
+    const ws = new WebSocket(`ws://${baseUrl}/api/MusicSheets/ws`);
+  
+    ws.onopen = () => console.log('WebSocket connected');
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onMessage(data); // Directly pass the music sheet data
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
+  
+    ws.onerror = (error) => console.error('WebSocket error:', error);
+    ws.onclose = () => console.log('WebSocket disconnected');
+  
+    return ws;
   }
 };

@@ -228,70 +228,23 @@ export default {
       this.currentPage = 1;
       this.fetchMusicSheets();
     },
-    toggleWorker() {
-      if (this.workerActive) {
-        // Stop generator
-        this.isManualDisconnect = true;
-        if (this.wsConnection) {
-          this.wsConnection.send(JSON.stringify({
-            type: 'TOGGLE_GENERATION',
-            active: false
-          }));
-          this.wsConnection.close();
-        }
-        this.workerActive = false;
-        this.connectionStatus = 'disconnected';
-      } else {
-        // Start generator
-        this.isManualDisconnect = false;
-        this.connectionStatus = 'connecting';
-        this.setupWebSocket();
+    async toggleWorker() {
+      const isRunning = !this.workerActive;
+      try {
+        await api.toggleWorker(isRunning);
+        console.log(`Worker ${isRunning ? "started" : "stopped"}`); 
+        this.workerActive = isRunning;
+      } catch (error) {
+        console.error('Error toggling worker:', error);
       }
     },
 
     setupWebSocket() {
-      this.wsConnection = api.setupWebSocket((message) => {
-        if (message.type === 'NEW_SHEET') {
-          this.musicSheets.unshift(message.data);
-          this.totalItems += 1;
-        } else if (message.type === 'STATUS_UPDATE') {
-          this.handleStatusUpdate(message);
-        }
+      this.wsConnection = api.setupWebSocket((newSheet) => {
+        this.musicSheets = [this.musicSheets, newSheet];
+        console.log("New sheet added:", newSheet);
+        this.totalItems += 1;
       });
-
-      this.wsConnection.onopen = () => {
-        this.connectionStatus = 'connected';
-        this.reconnectAttempts = 0;
-        this.wsConnection.send(JSON.stringify({
-          type: 'TOGGLE_GENERATION',
-          active: true,
-          interval: 100
-        }));
-        this.workerActive = true;
-      };
-
-      this.wsConnection.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        this.connectionStatus = 'error';
-      };
-
-      this.wsConnection.onclose = () => {
-        this.connectionStatus = 'disconnected';
-        if (!this.isManualDisconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          setTimeout(() => {
-            this.setupWebSocket();
-          }, 1000 * this.reconnectAttempts);
-        }
-      };
-    },
-
-    handleStatusUpdate(message) {
-      if (message.status === 'reconnecting') {
-        this.connectionStatus = 'reconnecting';
-        this.reconnectAttempts = message.attempt;
-      }
-      // Handle other status updates if needed
     },
 
     isWebSocketOpen() {
@@ -357,12 +310,7 @@ export default {
     // });
     
     // Initialize WebSocket connection
-    this.wsConnection = api.setupWebSocket((message) => {
-      if (message.type === 'NEW_SHEET') {
-        this.musicSheets.unshift(message.data);
-        this.totalItems += 1;
-      }
-    });
+    this.setupWebSocket();
   },
   beforeUnmount() {
     this.isManualDisconnect = true; // Set flag to indicate manual disconnection

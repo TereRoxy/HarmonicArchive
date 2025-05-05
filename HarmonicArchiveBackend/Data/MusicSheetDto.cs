@@ -5,7 +5,7 @@ namespace HarmonicArchiveBackend.Data
 {
     public class MusicSheetDto
     {
-        private const string TitleRegex = @"^[a-zA-Z0-9\s\-_,.]+$";
+        private const string TitleRegex = @"^[a-zA-Z0-9\s\-_,.]{1,255}$";
         private const string YearRegex = @"^\d{4}$";
         private const string KeyRegex = @"^[a-zA-Z0-9\s\-#]+$";
 
@@ -28,14 +28,18 @@ namespace HarmonicArchiveBackend.Data
         [Required(ErrorMessage = "At least one genre is required.")]
         [MinLength(1, ErrorMessage = "At least one genre is required.")]
         [ValidArrayItems(TitleRegex, ErrorMessage = "Invalid genre.")]
+        [MaxLength(10, ErrorMessage = "A maximum of 10 genres is allowed.")]
         public List<string> Genres { get; set; }
 
         [Required(ErrorMessage = "At least one instrument is required.")]
         [MinLength(1, ErrorMessage = "At least one instrument is required.")]
         [ValidArrayItems(TitleRegex, ErrorMessage = "Invalid instrument.")]
+        [MaxLength(10, ErrorMessage = "A maximum of 10 instruments is allowed.")]
         public List<string> Instruments { get; set; }
     
         [Required(ErrorMessage = "Music file is required.")]
         public IFormFile MusicFile { get; set; } // Accept the actual file    
+
+        public IFormFile VideoFile { get; set; } // Accept the actual file
     }
 }

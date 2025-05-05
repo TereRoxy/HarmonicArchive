@@ -1,4 +1,5 @@
 using HarmonicArchiveBackend.Data;
+using HarmonicArchiveBackend.Repository;
 using HarmonicArchiveBackend.Services;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using System.Globalization;
 using System.Net.WebSockets;
 using System.Text;
+using WebSocketManager = HarmonicArchiveBackend.Services.WebSocketManager;
 
 // Force invariant culture for the entire app
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
@@ -21,21 +23,32 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigins", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://192.168.100.6:5173")
+        policy.WithOrigins("http://localhost:5173", "http://192.168.100.6:5173", "http://192.168.100.2:5173")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
+// Register DbContext with scoped lifetime (default for AddDbContext)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
-builder.Services.AddSingleton<HarmonicArchiveBackend.Services.WebSocketManager>();
-builder.Services.AddSingleton<MusicSheetWorker>(); // Register as a singleton
-builder.Services.AddHostedService<MusicSheetWorker>(); // Register as a hosted service
+// Register WebSocketManager as a singleton
+builder.Services.AddSingleton<WebSocketManager>();
+
+// Register MusicSheetWorker as a singleton and hosted service
+builder.Services.AddSingleton<MusicSheetWorker>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<MusicSheetWorker>());
+
+// Register repository and service with scoped lifetime
+builder.Services.AddScoped<MusicSheetRepository>();
+builder.Services.AddScoped<MusicSheetService>();
+
+// Register controllers
 builder.Services.AddControllers();
 
-builder.Services.AddEndpointsApiExplorer();
+// Configure Swagger with file upload support
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -44,14 +57,15 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    // Enable support for file uploads
     options.OperationFilter<FileUploadOperationFilter>();
 });
 
+// Configure form options for large file uploads
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = 10L * 1024 * 1024 * 1024; // 10 GB
 });
+
 
 var app = builder.Build();
 
@@ -109,4 +123,21 @@ app.Map("/ws", async context =>
         }
     }
 });
+
+// Seed the database with 20 music sheets at startup
+//using (var scope = app.Services.CreateScope())
+//{
+//    var serviceProvider = scope.ServiceProvider;
+//    var musicSheetService = serviceProvider.GetRequiredService<MusicSheetService>();
+
+//    // Generate 20 fake music sheets
+//    var fakeMusicSheets = MusicSheetGenerator.GenerateMusicSheets(20);
+
+//    foreach (var musicSheet in fakeMusicSheets)
+//    {
+//        await musicSheetService.AddMusicSheetAsync(musicSheet);
+//    }
+//}
+
+
 app.Run();

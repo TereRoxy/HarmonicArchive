@@ -15,7 +15,7 @@ export default defineConfig({
     format: "es", // Enable ES module format for Web Workers
   },
   server: {
-    host: '192.168.100.6', // Use your machine's correct IP address
+    host: '192.168.100.2', // Use your machine's correct IP address
     port: 5173,
   },
 });

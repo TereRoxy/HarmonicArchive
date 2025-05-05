@@ -22,6 +22,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<MusicSheetInstrument>()
             .HasKey(msi => new { msi.MusicSheetId, msi.InstrumentId });
 
+        modelBuilder.Entity<Title>()
+        .Property(t => t.Name)
+        .HasMaxLength(255); // Limit the length to 255 characters
+
+
         base.OnModelCreating(modelBuilder);
     }
 }

@@ -22,9 +22,10 @@ namespace HarmonicArchiveBackend.Services
                             {
                                 Type = "object",
                                 Properties = fileParameters.ToDictionary(
-                                    p => p.Name,
+                                    p => p.Name ?? throw new InvalidOperationException("Parameter name cannot be null"),
                                     p => new OpenApiSchema { Type = "string", Format = "binary" }
                                 ),
+
                                 Required = fileParameters.Select(p => p.Name).ToHashSet()
                             }
                         }
