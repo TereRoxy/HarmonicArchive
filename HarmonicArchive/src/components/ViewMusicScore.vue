@@ -103,6 +103,12 @@
       </div>
     </div>
   </div>
+  <div v-else-if="loading" class="loading-message">
+    Loading music sheet...
+  </div>
+  <div v-else class="error-message">
+    Music sheet not found
+  </div>
 </template>
 
 <script>
@@ -113,7 +119,22 @@ export default {
   components: {
     PdfViewer,
   },
-  props: ['id'],
+  props: {
+    id: {
+      type: [String, Number],
+      required: true
+    }
+  },
+  watch: {
+    id: {
+      immediate: true,
+      handler(newId) {
+        if (newId) {
+          this.fetchMusicSheet();
+        }
+      }
+    }
+  },
   data() {
     return {
       musicSheet: null,
@@ -128,29 +149,25 @@ export default {
     };
   },
   watch: {
-  id: {
-    immediate: true,
-    handler(newId) {
+    id(newId) {
       if (newId) {
         this.fetchMusicSheet();
       }
-    },
-  },
+    }
 },
   created() {
     this.fetchMusicSheet();
   },
   methods: {
     async fetchMusicSheet() {
-      const id = this.$route.params.id;
-      console.log("Fetching music sheet with id:", id); // Debugging
+      this.loading = true;
       try {
-        const response = await api.getMusicSheet(id); // Use the proper API method
-        console.log("Music sheet fetched successfully:", response.data);
-        this.musicSheet = response.data;
-        console.log("PDF Source:", this.musicSheet.link);
+        const response = await api.getMusicSheet(this.id);
+        this.musicSheet = this.transformMusicSheetData(response.data);
+        this.loading = false;
       } catch (error) {
         console.error("Error fetching music sheet:", error);
+        this.loading = false;
       }
     },
     startEditing() {
@@ -200,6 +217,22 @@ export default {
           console.error("Error deleting music sheet:", error);
         }
       }
+    },
+    transformMusicSheetData(data) {
+      // Transform the API response to match your component's expected structure
+      return {
+        id: data.id,
+        title: data.title?.name || data.title || '',
+        composer: data.composer?.name || data.composer || '',
+        year: data.year,
+        key: data.key,
+        genres: data.genres || data.musicSheetGenres?.map(g => g.genre?.name) || [],
+        instruments: data.instruments || data.musicSheetInstruments || [],
+        musicFilePath: data.musicFilePath,
+        videoFilePath: data.videoFilePath,
+        link: data.musicFilePath ? api.getFileUrl(data.musicFilePath) : null,
+        videoLink: data.videoFilePath ? api.getFileUrl(data.videoFilePath) : null
+      };
     },
 
     async downloadFiles() {

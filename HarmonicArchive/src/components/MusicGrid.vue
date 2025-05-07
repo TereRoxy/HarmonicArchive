@@ -4,14 +4,18 @@
       v-for="(musicSheet, index) in musicSheets"
       :key="musicSheet.id"
       class="music-item"
-      @click="$emit('openItem', musicSheet)"
+      @click="$emit('openItem', Number(musicSheet.id))"
     >
       <div class="item-info">
-        <h3>{{ musicSheet.title.name }}</h3>
-        <p><strong>Composer:</strong> {{ musicSheet.composer.name }}</p>
-        <p v-if="musicSheet.musicSheetGenres.length > 0">
-          <strong>Genres:</strong> 
-          {{ musicSheet.musicSheetGenres.map(g => g.genre?.name).join(", ") }}
+        <h3>{{ musicSheet.title }}</h3>
+        <p><strong>Composer:</strong> {{ musicSheet.composer }}</p>
+        <p> <strong>Genres:</strong>
+          <span
+                v-for="(genre, index) in musicSheet.genres"
+                :key="index"
+              >
+                {{ genre }}
+              </span>
         </p>
         <p>
           <span

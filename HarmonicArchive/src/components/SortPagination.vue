@@ -1,21 +1,22 @@
 <template>
     <div class="sort-pagination-container">
+      <div class="sort-label">
+        <span>Sort by:</span>
+      </div>
       <div class="sort-options">
         <button @click="$emit('setSort', 'title')">
-          Sort by Name
+          Name
           <span v-if="sortBy === 'title'">{{ sortOrder === "asc" ? "↑" : "↓" }}</span>
         </button>
         <button @click="$emit('setSort', 'composer')">
-          Sort by Composer
+          Composer
           <span v-if="sortBy === 'composer'">{{ sortOrder === "asc" ? "↑" : "↓" }}</span>
         </button>
         <button @click="$emit('setSort', 'year')">
-          Sort by Year
+          Year
           <span v-if="sortBy === 'year'">{{ sortOrder === "asc" ? "↑" : "↓" }}</span>
         </button>
-        <button @click="$emit('toggleWorker')" class="worker-btn">
-        {{ workerActive ? "Stop Generator" : "Start Generator" }}
-        </button>
+        
       </div>
   
       <div class="pagination">
@@ -64,11 +65,13 @@
       itemsPerPage : {
         default: 6,
       },
-      workerActive: Boolean,
     },
   };
   </script>
   
   <style scoped>
-
+  .sort-label {
+    font-weight: bold;
+    margin-right: 10px; /* Add spacing between the label and the first button */
+  }
   </style>

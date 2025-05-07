@@ -49,6 +49,8 @@
       </router-link>
     </div>
   </div>
+  <!-- Footer Component -->
+  <Footer />
 </template>
 
 <script>
@@ -57,6 +59,8 @@ import Header from "./Header.vue";
 import SortPagination from "./SortPagination.vue";
 import MusicGrid from "./MusicGrid.vue";
 import api from "../services/api";
+import { Title } from "chart.js";
+import Footer from "./Footer.vue"; // Import the Footer component
 
 export default {
   components: {
@@ -64,6 +68,7 @@ export default {
     Header,
     SortPagination,
     MusicGrid,
+    Footer, // Register the Footer component
   },
   data() {
     return {
@@ -73,13 +78,13 @@ export default {
       sortBy: "title",
       sortOrder: "asc",
       currentPage: 1,
-      itemsPerPage: Number.MAX_SAFE_INTEGER, // Default to all items
+      itemsPerPage: 12,
       worker: null,
       workerActive: false,
       genres: ["Rock", "Pop", "Classical"],
       instruments: ["Guitar", "Piano", "Drums"],
       musicSheets: [], // Replace state.musicSheets with local data
-      totalItems: 0, // Total number of items for pagination
+      totalItems: 60, // Total number of items for pagination
       connectionStatus: 'disconnected', // Connection status for WebSocket
       reconnectAttempts: 0,
       maxReconnectAttempts: 5, // Maximum number of reconnection attempts
@@ -98,27 +103,15 @@ export default {
   methods: {
     fetchMusicSheets() {
     const params = {
+      title: this.searchQuery,
+      composer: this.searchQuery,
+      genres: this.selectedGenres.join(","),
+      instruments: this.selectedInstruments.join(","),
       _page: this.currentPage,
       _limit: this.itemsPerPage,
       _sort: this.sortBy,
       _order: this.sortOrder,
     };
-
-    // Add search query if exists
-    if (this.searchQuery) {
-      params.q = this.searchQuery;
-    }
-
-    // Add genre filter if any selected
-    if (this.selectedGenres.length) {
-      params.genres = this.selectedGenres.join(',');
-    }
-
-    // Add instrument filter if any selected
-    if (this.selectedInstruments.length) {
-      params.instruments = this.selectedInstruments.join(',');
-    }
-
     console.log("Fetching with params:", params); // Debug log
 
     api.getMusicSheets(params)
@@ -130,36 +123,6 @@ export default {
         console.error("Error fetching music sheets:", error);
       });
   },
-
-  fetchMoreMusicSheets() {
-      const params = {
-        _page: this.currentPage,
-        _limit: this.itemsPerPage,
-        _sort: this.sortBy,
-        _order: this.sortOrder,
-      };
-
-      if (this.searchQuery) {
-        params.q = this.searchQuery;
-      }
-      if (this.selectedGenres.length) {
-        params.genres = this.selectedGenres.join(",");
-      }
-      if (this.selectedInstruments.length) {
-        params.instruments = this.selectedInstruments.join(",");
-      }
-
-      api.getMusicSheets(params)
-        .then(response => {
-          this.musicSheets = [...this.musicSheets, ...response.data.data || response.data];
-          this.totalItems = response.data.total || response.data.length || 0;
-          this.isLoadingMore = false;
-        })
-        .catch(error => {
-          console.error("Error fetching more music sheets:", error);
-          this.isLoadingMore = false;
-        });
-    },
     searchItems(query) {
       this.searchQuery = query;
       this.currentPage = 1;
@@ -251,58 +214,32 @@ export default {
       return this.wsConnection && this.wsConnection.readyState === WebSocket.OPEN;
     },
 
-    openItem(item) {
-      if (item && item.id) {
-        this.$router.push({ name: "ViewSheet", params: { id: item.id } });
-      } else {
-        console.error("Invalid item passed to openItem:", item);
+    // In methods:
+    openItem(id) {
+      // Ensure we have a valid ID
+      if (!id) {
+        console.error('No ID provided');
+        return;
       }
+      
+      // Convert to number if needed
+      const numericId = Number(id);
+      if (isNaN(numericId)) {
+        console.error('Invalid ID format');
+        return;
+      }
+
+      // Navigate using path format to ensure ID is passed
+      this.$router.push(`/${numericId}`)
+        .catch(err => {
+          if (!err.message.includes('Avoided redundant navigation')) {
+            console.error('Navigation error:', err);
+          }
+        });
     },
-    handleScroll() {
-    const scrollPosition = window.innerHeight + window.scrollY;
-    const bottomPosition = document.documentElement.offsetHeight - 100; // 100px from the bottom
-
-    if (scrollPosition >= bottomPosition && !this.isLoadingMore && this.musicSheets.length < this.totalItems) {
-      this.isLoadingMore = true;
-      this.currentPage++;
-      this.fetchMoreMusicSheets();
-    }
-  },
-
-  fetchMoreMusicSheets() {
-    const params = {
-      _page: this.currentPage,
-      _limit: this.itemsPerPage,
-      _sort: this.sortBy,
-      _order: this.sortOrder,
-    };
-
-    if (this.searchQuery) {
-      params.q = this.searchQuery;
-    }
-    if (this.selectedGenres.length) {
-      params.genres = this.selectedGenres.join(",");
-    }
-    if (this.selectedInstruments.length) {
-      params.instruments = this.selectedInstruments.join(",");
-    }
-
-    api.getMusicSheets(params)
-      .then(response => {
-        this.musicSheets = [...this.musicSheets, ...response.data.data];
-        this.totalItems = response.data.total;
-        this.isLoadingMore = false;
-      })
-      .catch(error => {
-        console.error("Error fetching more music sheets:", error);
-        this.isLoadingMore = false;
-      });
-  },
   },
   created() {
     this.fetchMusicSheets(); // Fetch data when the component is created
-
-    window.addEventListener("scroll", this.handleScroll)
 
       // Check initial generation status
     // api.getGenerationStatus().then(response => {
@@ -321,4 +258,5 @@ export default {
 };
 </script>
 
-<style src="../assets/dashboard.css"></style>
+<style src="../assets/dashboard.css">
+</style>

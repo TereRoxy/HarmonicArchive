@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { BASE_URL } from '../../config.js'; // Adjust the import path as necessary 
 
 const api = axios.create({
-  baseURL: 'http://192.168.100.2:5000/api',
+  baseURL: `${BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -13,22 +14,13 @@ export const getFileUrl = (path, fileType = 'music') => {
     console.error('Invalid path provided:', path);
     return null;
   }
-  return `http://192.168.100.2:5000/${path}`;
+  return `${BASE_URL}/${path}`;
 };
 
 export default {
   // Music Sheets CRUD operations
   getMusicSheets(params = {}) {
-    // Set default values for pagination and sorting
-    const defaultParams = {
-      _sort: 'title',
-      _order: 'asc',
-      _page: 1,
-      _limit: 50, // Use a reasonable limit
-    };
-  
-    // Merge default params with user-provided params
-    const queryParams = { ...params, ...defaultParams };
+    const queryParams = { ...params};
   
     return api.get('/MusicSheets', { params: queryParams });
   },
@@ -81,8 +73,7 @@ export default {
   // WebSocket setup
   // api.js
   setupWebSocket(onMessage) {
-    const baseUrl = '192.168.100.2:5000';
-    const ws = new WebSocket(`ws://${baseUrl}/api/MusicSheets/ws`);
+    const ws = new WebSocket(`${BASE_URL.replace('http', 'ws')}/api/MusicSheets/ws`);
   
     ws.onopen = () => console.log('WebSocket connected');
     

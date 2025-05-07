@@ -11,28 +11,25 @@ const routes = [
   },
   { 
     path: "/upload", 
+    name: "Upload",
     component: Upload 
   },
-  { 
-    path: "/", 
-    component: View,
-    children: [
-      {
-        path: ":id", // This will match /view/1, /view/2, etc.
-        name: "ViewSheet", // This name is used in your navigation
-        component: ViewMusicScore,
-        props: (route) => ({ id: route.params.id }), // Pass the id as a prop to the component
-        beforeEnter: (to, from, next) => {
-          // Check if the id is a valid number
-          const id = Number(to.params.id);
-          if (isNaN(id)) {
-            next({ name: "Home" }); // Redirect to Home if invalid
-          } else {
-            next(); // Proceed to the route
-          }
-        },
+  // In router.js
+  {
+    path: "/:id",
+    name: "ViewSheet",
+    component: ViewMusicScore,
+    props: (route) => ({ 
+      id: route.params.id
+    }),
+    beforeEnter: (to, from, next) => {
+      const id = Number(to.params.id);
+      if (isNaN(id)) {
+        next({ name: "Home" });
+      } else {
+        next();
       }
-    ]
+    },
   },
 ];
 
