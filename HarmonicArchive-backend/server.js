@@ -8,12 +8,12 @@ const axios = require('axios');
 
 const app = express();
 const PORT = 5000;
-const IP = '192.168.100.2';
+const IP = '192.168.189.172';
 
 
 // Enhanced CORS configuration
 app.use(cors({
-  origin: ['http://192.168.100.2:5173', "http://localhost:5173"],
+  origin: ['http://192.168.189.172:5173', "http://localhost:5173", 'http://192.168.189.59:'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type'],
   exposedHeaders: ['Content-Disposition'] // Add this if you need to handle downloads

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const SERVER_HEALTH_URL = 'http://192.168.189.172:5000/api/health';
+const SERVER_HEALTH_URL = 'http://192.168.100.2:5000/api/health';
 
 export const checkNetworkStatus = () => navigator.onLine;
 

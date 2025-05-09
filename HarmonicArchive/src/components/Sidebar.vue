@@ -77,6 +77,11 @@
       <div class="chart-container">
         <MusicSheetsChart :musicSheets="musicSheets" />
       </div>
+
+        <button @click="$emit('toggleWorker')" class="worker-btn">
+          {{ workerActive ? "Stop Generator" : "Start Generator" }}
+        </button>
+
     </div>
   </template>
   
@@ -94,6 +99,7 @@
         type: Array,
         default: () => [] // Provide empty array as default
       },
+      workerActive: Boolean,
     },
     data() {
       return {

@@ -1,165 +1,94 @@
 import axios from 'axios';
+import { BASE_URL } from '../../config.js'; // Adjust the import path as necessary 
 
 const api = axios.create({
-  baseURL: 'http://192.168.100.2:5000/api', // Changed to match server port
+  baseURL: `${BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-export const getPdfUrl = (path) => {
+// Helper function to get file URLs
+export const getFileUrl = (path, fileType = 'music') => {
   if (!path) {
-    console.error('Invalid path provided to getPdfUrl:', path);
+    console.error('Invalid path provided:', path);
     return null;
   }
-  return `http://192.168.100.2:5000${path}`;
+  return `${BASE_URL}/${path}`;
 };
 
 export default {
-  // Get all sheets with optional filtering
-  getSheets(params = {}) {
-    return api.get('/sheets', { params });
+  // Music Sheets CRUD operations
+  getMusicSheets(params = {}) {
+    const queryParams = { ...params};
+  
+    return api.get('/MusicSheets', { params: queryParams });
   },
 
-  // Get single sheet
-  getSheet(id) {
-    return api.get(`/sheets/${id}`);
+  getMusicSheet(id) {
+    return api.get(`/MusicSheets/${id}`);
   },
 
-  // Add a new sheet
-  addSheet(sheet) {
-    return api.post('/sheets', sheet);
+  createMusicSheet(sheetData) {
+    return api.post('/MusicSheets', sheetData);
   },
 
-  // Edit an existing sheet
-  editSheet(id, updatedData) {
-    return api.patch(`/sheets/${id}`, updatedData);
+  updateMusicSheet(id, updatedData) {
+    return api.patch(`/MusicSheets/${id}`, updatedData);
   },
 
-  // Remove a sheet
-  deleteSheet(id) {
-    return api.delete(`/sheets/${id}`);
+  deleteMusicSheet(id) {
+    return api.delete(`/MusicSheets/${id}`);
   },
 
-  // Get filtered sheets (same as getSheets with params)
-  getFilteredSheets(filterParams) {
-    return this.getSheets(filterParams);
-  },
-
-  getMusicSheets:(params) => {
-    return api.get('/music-sheets', { params });
-  },
-
-  uploadWithProgress(formData, onUploadProgress) {
-    return api.post("/sheets", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-      onUploadProgress,
+  // File upload operations
+  uploadMusicSheet(formData, onUploadProgress) {
+    return api.post('/MusicSheets/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress
     });
   },
 
-  // Add these methods to your api.js
-  uploadVideo: {
-    start: (fileData) => api.post('/upload/video/start', fileData),
-    chunk: (fileId, chunk, chunkIndex, totalChunks, onProgress) => {
-      const formData = new FormData();
-      formData.append('fileId', fileId);
-      formData.append('chunkIndex', chunkIndex);
-      formData.append('totalChunks', totalChunks);
-      formData.append('chunk', chunk);
-      
-      return api.post('/upload/video/chunk', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: onProgress
-      });
-    },
-    complete: (fileId, fileName) => 
-      api.post('/upload/video/complete', { fileId, fileName })
+  uploadVideoChunk(chunkData) {
+    const { chunk, uploadId, chunkIndex, totalChunks, fileName } = chunkData;
+    const formData = new FormData();
+    formData.append('chunk', chunk);
+    formData.append('uploadId', uploadId);
+    formData.append('chunkIndex', chunkIndex);
+    formData.append('totalChunks', totalChunks);
+    formData.append('fileName', fileName);
+
+    return api.post('/MusicSheets/upload-resumable', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   },
 
-  // New methods for generation control
-  toggleGeneration(active, interval = 5000) {
-    return api.post('/generate', { active, interval });
+  // Worker control
+  toggleWorker(isRunning) {
+    return api.post('/MusicSheets/toggle-worker', null, {
+      params: { isRunning }
+    });
   },
-  
-  getGenerationStatus() {
-    return api.get('/generate/status');
-  },
-  // Auto-reconnect logic
-  attemptReconnect(connection, onMessage, maxAttempts = 5, interval = 3000) {
-    let attempts = 0;
-    
-    const reconnect = () => {
-      if (attempts >= maxAttempts) {
-        console.error('Max reconnection attempts reached');
-        return;
-      }
 
-      attempts++;
-      console.log(`Reconnecting attempt ${attempts}/${maxAttempts}...`);
-
-      const newWs = new WebSocket('ws://192.168.100.6:5000');
-      
-      newWs.onopen = () => {
-        console.log('Reconnected successfully');
-        connection.ws = newWs;
-        connection.readyState = WebSocket.OPEN;
-        connection.onreconnect?.();
-        clearInterval(reconnectInterval);
-      };
-
-      newWs.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          onMessage(message);
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
-    };
-
-    const reconnectInterval = setInterval(reconnect, interval);
-    connection.onreconnect = () => {
-      clearInterval(reconnectInterval);
-    };
-
-    // Initial reconnect attempt
-    reconnect();
-  },
-  
-  // api.js - WebSocket enhancements
+  // WebSocket setup
+  // api.js
   setupWebSocket(onMessage) {
-
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
-
-    const ws = new WebSocket('ws://192.168.100.6:5000');
+    const ws = new WebSocket(`${BASE_URL.replace('http', 'ws')}/api/MusicSheets/ws`);
+  
+    ws.onopen = () => console.log('WebSocket connected');
     
-    ws.onopen = () => {
-      console.log('WebSocket connected');
-      reconnectAttempts = 0; // Reset attempts on successful connection
-    };
-  
     ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      onMessage(message);
-    };
-  
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-  
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      if (reconnectAttempts < maxReconnectAttempts) {
-        reconnectAttempts++;
-        setTimeout(() => {
-          setupWebSocket(onMessage); // Retry connection
-        }, 1000 * reconnectAttempts);
-      } else {
-        console.error('Max reconnection attempts reached');
+      try {
+        const data = JSON.parse(event.data);
+        onMessage(data); // Directly pass the music sheet data
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
       }
     };
+  
+    ws.onerror = (error) => console.error('WebSocket error:', error);
+    ws.onclose = () => console.log('WebSocket disconnected');
   
     return ws;
-  },
+  }
 };

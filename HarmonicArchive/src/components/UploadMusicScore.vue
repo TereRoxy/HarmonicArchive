@@ -333,7 +333,7 @@ export default {
       }
 
       try {
-        const response = await api.uploadWithProgress(formData, (progressEvent) => {
+        const response = await api.uploadMusicSheet(formData, (progressEvent) => {
           if (progressEvent.total) {
             this.uploadProgress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
           }
@@ -346,6 +346,42 @@ export default {
         console.error("Error uploading files:", error);
       }
     },
+
+    async uploadVideoChunks(file, chunkSize) {
+      const totalChunks = Math.ceil(file.size / chunkSize);
+
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(file.size, start + chunkSize);
+        const chunk = file.slice(start, end);
+
+        try {
+          await api.uploadVideoChunk({
+            chunk,
+            uploadId: this.videoFileId,
+            chunkIndex: i,
+            totalChunks,
+            fileName: file.name,
+          });
+          const chunkProgress = 100;
+
+          // Update progress for this chunk
+          this.videoChunkProgress[i] = chunkProgress;
+          this.videoChunkProgress = [...this.videoChunkProgress];
+
+          // Calculate overall progress
+          const totalProgress = this.videoChunkProgress.reduce(
+            (sum, progress) => sum + progress,
+            0
+          ) / totalChunks;
+
+          this.videoUploadProgress = Math.round(totalProgress);
+        } catch (error) {
+          console.error(`Error uploading chunk ${i}:`, error);
+          throw error;
+        }
+      }
+    }
   },
 };
 </script>

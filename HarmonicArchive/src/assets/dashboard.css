@@ -1,6 +1,15 @@
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  font-size: 100%;
+  vertical-align: baseline;
+  background: transparent;
+}
+
 .app-container {
   display: flex;
-  height: 100vh;
 }
 
 .sidebar {
@@ -10,7 +19,6 @@
   color: white;
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 .profile-section {
@@ -241,7 +249,7 @@
   border-radius: 10px;
   color: #f4effa;
   border: none;
-  position: absolute;
+  position: fixed;
   bottom: 20px;
   right: 20px;
   cursor: pointer;
@@ -262,17 +270,18 @@
 }
 
 .worker-btn {
-  background-color: #4caf50;
+  background-color: #532b88;
   color: white;
   border: none;
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
   margin-left: 10px;
+  transition: background-color 0.3s;
 }
 
 .worker-btn:hover {
-  background-color: #45a049;
+  background-color: #6d28d9;
 }
 
 .items-per-page select {
