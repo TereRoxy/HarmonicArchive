@@ -26,7 +26,6 @@ public class ApplicationDbContext : DbContext
         .Property(t => t.Name)
         .HasMaxLength(255); // Limit the length to 255 characters
 
-
         base.OnModelCreating(modelBuilder);
     }
 }

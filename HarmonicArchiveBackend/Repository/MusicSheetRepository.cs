@@ -25,14 +25,11 @@ namespace HarmonicArchiveBackend.Repository
             var query = _context.MusicSheets.AsQueryable();
 
             // Apply filtering
-            if (!string.IsNullOrEmpty(title))
+            if (!string.IsNullOrEmpty(title) || !string.IsNullOrEmpty(composer))
             {
-                query = query.Where(ms => ms.Title.Name.StartsWith(title));
-            }
-
-            if (!string.IsNullOrEmpty(composer))
-            {
-                query = query.Where(ms => ms.Composer.Name.Contains(composer));
+                query = query.Where(ms =>
+                    (!string.IsNullOrEmpty(title) && ms.Title.Name.Contains(title)) ||
+                    (!string.IsNullOrEmpty(composer) && ms.Composer.Name.Contains(composer)));
             }
 
             if (genres != null && genres.Any())
@@ -70,7 +67,15 @@ namespace HarmonicArchiveBackend.Repository
                     Key = ms.Key,
                     Year = ms.Year,
                     Title = new Title { Name = ms.Title.Name },
-                    Composer = new Composer { Name = ms.Composer.Name }
+                    Composer = new Composer { Name = ms.Composer.Name },
+                    MusicSheetGenres = ms.MusicSheetGenres.Select(msg => new MusicSheetGenre
+                    {
+                        Genre = new Genre { Name = msg.Genre.Name }
+                    }).ToList(),
+                    MusicSheetInstruments = ms.MusicSheetInstruments.Select(msi => new MusicSheetInstrument
+                    {
+                        Instrument = new Instrument { Name = msi.Instrument.Name }
+                    }).ToList()
                 })
                 .ToListAsync();
 
@@ -107,6 +112,20 @@ namespace HarmonicArchiveBackend.Repository
         {
             _context.MusicSheets.Remove(musicSheet);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<Genre>> GetGenresByNameAsync(List<string> genreNames)
+        {
+            return await _context.Genres
+                .Where(g => genreNames.Contains(g.Name))
+                .ToListAsync();
+        }
+
+        public async Task<List<Instrument>> GetInstrumentsByNameAsync(List<string> instrumentNames)
+        {
+            return await _context.Instruments
+                .Where(i => instrumentNames.Contains(i.Name))
+                .ToListAsync();
         }
     }
 }

@@ -49,16 +49,22 @@ builder.Services.AddScoped<MusicSheetService>();
 builder.Services.AddControllers();
 
 // Configure Swagger with file upload support
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddSwaggerGen(c =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Harmonic Archive API",
-        Version = "v1"
-    });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "HarmonicArchiveBackend", Version = "v1" });
 
-    options.OperationFilter<FileUploadOperationFilter>();
+    // Add support for file uploads
+    c.OperationFilter<SwaggerFileOperationFilter>();
+
+    // Ensure multipart/form-data is supported
+    c.MapType<IFormFile>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "binary"
+    });
 });
+
+
 
 // Configure form options for large file uploads
 builder.Services.Configure<FormOptions>(options =>

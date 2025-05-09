@@ -36,10 +36,8 @@ public class MusicSheetsController : ControllerBase
 
         return Ok(new
         {
-            TotalItems = totalCount,
-            Page = _page,
-            Limit = _limit,
-            Data = musicSheets
+            Data = musicSheets,
+            TotalCount = totalCount,
         });
     }
 
@@ -133,49 +131,17 @@ public class MusicSheetsController : ControllerBase
         }
     }
 
-    [HttpPut("upload/{id}")]
-    public async Task<IActionResult> UploadMusicSheetWithFiles(int id, [FromForm] MusicSheetDto musicSheetDto)
+    [HttpPut("upload")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadMusicSheetFiles(IFormFile file)
     {
-        if (!ModelState.IsValid)
+        if (!_service.ValidateFileType(file))
         {
-            return BadRequest(ModelState);
+            return BadRequest(new { Message = "Invalid file type. Only images, PDFs, and videos are allowed." });
         }
 
-        string musicFilePath = null;
-        string videoFilePath = null;
-
-        if (musicSheetDto.MusicFile != null)
-        {
-            var musicFileName = Guid.NewGuid() + Path.GetExtension(musicSheetDto.MusicFile.FileName);
-            musicFilePath = Path.Combine("uploads/music", musicFileName);
-            Directory.CreateDirectory(Path.GetDirectoryName(musicFilePath));
-            using (var stream = new FileStream(musicFilePath, FileMode.Create))
-            {
-                await musicSheetDto.MusicFile.CopyToAsync(stream);
-            }
-            musicSheetDto.MusicFile = null; // Clear the file reference
-        }
-
-        if (musicSheetDto.VideoFile != null)
-        {
-            var videoFileName = Guid.NewGuid() + Path.GetExtension(musicSheetDto.VideoFile.FileName);
-            videoFilePath = Path.Combine("uploads/videos", videoFileName);
-            Directory.CreateDirectory(Path.GetDirectoryName(videoFilePath));
-            using (var stream = new FileStream(videoFilePath, FileMode.Create))
-            {
-                await musicSheetDto.VideoFile.CopyToAsync(stream);
-            }
-            musicSheetDto.VideoFile = null; // Clear the file reference
-        }
-
-        try
-        {
-            await _service.AddMusicSheetFromDtoAsync(musicSheetDto);
-            return Ok(new { Message = "Music sheet uploaded successfully." });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { Message = ex.Message });
-        }
+        // Proceed with file upload logic
+        var path = await _service.UploadMusicSheetFileAsync(file);
+        return Ok(new { FilePath = path });
     }
 }
