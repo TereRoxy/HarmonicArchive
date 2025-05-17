@@ -17,6 +17,17 @@
                 {{ genre }}
               </span>
         </p>
+
+        <p>
+          <strong>Instruments:</strong>
+          <span
+            v-for="(instrument, index) in musicSheet.instruments"
+            :key="index"
+          >
+            {{ instrument }}<span v-if="index < musicSheet.instruments.length - 1">, </span>
+          </span>
+        </p>
+
         <p>
           <span
             class="year-dot"
