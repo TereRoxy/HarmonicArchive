@@ -9,8 +9,8 @@
             id="musicFileInput"
             type="file"
             class="hidden"
-            @change="handleFileSelect('music', $event)"
-            accept=".pdf, .jpg, .jpeg, .png, .gif"
+            @change="handleFileSelect"
+            accept=".pdf"
           />
           <div class="text-center" @click="triggerFileInput('music')">
             <p class="drag-drop-text">
@@ -18,55 +18,9 @@
             </p>
             <button class="choose-file-btn">Choose file</button>
           </div>
-        </div>
+            <div v-if="uploadProgress > 0" class="progress-bar">
+          <div class="progress" :style="{ width: uploadProgress + '%' }"></div>
       </div>
-
-      <!-- Video File Drag and Drop -->
-      <div class="drag-drop-area small" @dragover.prevent @drop.prevent="handleDrop('video')">
-        <div class="overlay">
-          <input
-            ref="videoFileInput"
-            id="videoFileInput"
-            accept=".mp4, .avi, .mov, .wmv"
-            type="file"
-            class="hidden"
-            @change="handleFileSelect('video', $event)"
-          />
-          <div class="text-center" @click="triggerFileInput('video')">
-            <p class="drag-drop-text">
-              {{ selectedVideoFile ? selectedVideoFile.name : "Drag and Drop Video File or..." }}
-            </p>
-            <button class="choose-file-btn">Choose Video File</button>
-          </div>
-          
-          <div v-if="videoUploadStatus !== 'idle'" class="video-upload-status">
-            <div class="status-message">
-              {{ 
-                videoUploadStatus === 'preparing' ? 'Preparing...' :
-                videoUploadStatus === 'uploading' ? 'Uploading...' :
-                videoUploadStatus === 'completed' ? 'Upload complete!' :
-                videoUploadStatus === 'error' ? 'Upload failed' : ''
-              }}
-            </div>
-            
-            <div v-if="videoUploadStatus === 'uploading'" class="progress-container">
-              <div class="progress-bar">
-                <div class="progress" :style="{ width: videoUploadProgress + '%' }"></div>
-              </div>
-              <div class="progress-text">{{ videoUploadProgress }}%</div>
-              
-              <div v-if="videoChunkProgress.length > 1" class="chunk-progress">
-                <div 
-                  v-for="(progress, index) in videoChunkProgress" 
-                  :key="index" 
-                  class="chunk-progress-bar"
-                  :style="{ width: (100 / videoChunkProgress.length) + '%', height: '4px', background: progress === 100 ? '#4CAF50' : progress > 0 ? '#2196F3' : '#e0e0e0' }"
-                  :title="`Chunk ${index + 1}: ${progress}%`"
-                ></div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -159,6 +113,7 @@
 <script>
 import api from "../services/api"; // Import the API
 import axios from "axios";
+import { uploadMusicFile } from "../services/api"; // Ensure this matches the path to your api.js file
 
 export default {
   data() {
@@ -170,14 +125,10 @@ export default {
         key: "",
         genres: "",
         instruments: "",
+        musicFileUrl: "",
       },
       selectedMusicFile: null,
-      selectedVideoFile: null,
       uploadProgress: 0,
-      videoUploadProgress: 0,
-      videoChunkProgress: [],
-      videoUploadStatus: 'idle',
-      videoFileId: null,
     };
   },
   methods: {
@@ -194,89 +145,43 @@ export default {
     triggerFileInput(type) {
       if (type === "music") {
         this.$refs.musicFileInput.click();
-      } else if (type === "video") {
-        this.$refs.videoFileInput.click();
       }
     },
 
-    async handleFileSelect(type, event) {
+    handleFileSelect(event) {
+      if (!event || !event.target || !event.target.files) {
+        console.error("Invalid event object:", event);
+        return;
+      }
+
       const file = event.target.files[0];
       if (file) {
-        if (type === "music") {
-          this.selectedMusicFile = file;
-        } else if (type === "video") {
-          this.selectedVideoFile = file;
-          this.videoUploadStatus = 'preparing';
-          await this.prepareVideoUpload(file);
-        }
+        this.selectedMusicFile = file;
+        this.uploadFile(file); // Automatically upload the file
       }
     },
 
-    async prepareVideoUpload(file) {
+    async uploadFile(file) {
+      const formData = new FormData();
+      formData.append("musicFile", file);
+
       try {
-        // Start the upload session
-        const response = await api.uploadVideo.start({
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type
+        const response = await uploadMusicFile(formData, (progressEvent) => {
+          if (progressEvent.total) {
+            this.uploadProgress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+          }
         });
-        
-        this.videoFileId = response.data.fileId;
-        this.videoChunkProgress = Array(Math.ceil(file.size / response.data.chunkSize)).fill(0);
-        this.videoUploadStatus = 'uploading';
-        
-        // Upload chunks
-        await this.uploadVideoChunks(file, response.data.chunkSize);
-        
-        // Complete the upload
-        const completeResponse = await api.uploadVideo.complete(
-          this.videoFileId,
-          file.name,
-          file.type
-        );
-        
-        this.videoUploadStatus = 'completed';
-        this.selectedVideoFile.serverFileName = completeResponse.data.fileName;
-      } catch (error) {
-        console.error('Video upload error:', error);
-        this.videoUploadStatus = 'error';
-      }
-    },
-    
-    async uploadVideoChunks(file, chunkSize) {
-      const totalChunks = Math.ceil(file.size / chunkSize);
-      
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * chunkSize;
-        const end = Math.min(file.size, start + chunkSize);
-        const chunk = file.slice(start, end);
-        
-        try {
-          await api.uploadVideo.chunk(
-            this.videoFileId,
-            chunk,
-            i,
-            (progressEvent) => {
-              const chunkProgress = Math.round(
-                (progressEvent.loaded / progressEvent.total) * 100
-              );
-              
-              // Update progress for this chunk
-              this.videoChunkProgress[i] = chunkProgress;
-              this.videoChunkProgress = [...this.videoChunkProgress];
-              
-              // Calculate overall progress
-              const totalProgress = this.videoChunkProgress.reduce(
-                (sum, progress) => sum + progress, 0
-              ) / totalChunks;
-              
-              this.videoUploadProgress = Math.round(totalProgress);
-            }
-          );
-        } catch (error) {
-          console.error(`Error uploading chunk ${i}:`, error);
-          throw error;
+
+        if (!response || !response.filePath) {
+          throw new Error("Invalid response from server");
         }
+
+        console.log("File uploaded successfully:", response.filePath);
+        this.formData.musicFileUrl = response.filePath; // Save the file path
+        console.log("File path saved in formData:", this.formData.musicFileUrl);
+      } catch (error) {
+        console.error("Error uploading file:", error.message);
+        alert("File upload failed. Please try again.");
       }
     },
 
@@ -284,20 +189,19 @@ export default {
       this.formData = {
         title: "",
         composer: "",
-        year: "",
+        year: 0,
         key: "",
-        genres: "",
-        instruments: "",
+        genres: [],
+        instruments: [],
+        musicFilePath: "",
       };
       this.selectedMusicFile = null;
-      this.selectedVideoFile = null;
       this.uploadProgress = 0;
     },
     goBack() {
       this.$router.go(-1);
     },
     formDataValid() {
-      // Check if all form fields are filled
       const titleRegex = /^[a-zA-Z0-9\s\-_,.]+$/;
       const yearRegex = /^\d{4}$/;
       const keyRegex = /^[a-zA-Z0-9\s\-#]+$/;
@@ -308,80 +212,30 @@ export default {
         keyRegex.test(this.formData.key) &&
         titleRegex.test(this.formData.genres) &&
         titleRegex.test(this.formData.instruments) &&
-        this.selectedMusicFile // Ensure a file is selected
+        this.formData.musicFileUrl // Ensure the file path is set
       );
     },
     async submitForm() {
       if (!this.formDataValid()) {
         console.log("Form data is invalid. Submission aborted.");
-        alert("Please fill in all fields correctly and select a file.");
+        alert("Please fill in all fields correctly.");
         return;
       }
 
-      const formData = new FormData();
-      formData.append("title", this.formData.title);
-      formData.append("composer", this.formData.composer);
-      formData.append("year", this.formData.year);
-      formData.append("key", this.formData.key);
-      formData.append("genres", this.formData.genres);
-      formData.append("instruments", this.formData.instruments);
-      formData.append("musicFile", this.selectedMusicFile);
-
-      // Add video file if uploaded
-      if (this.selectedVideoFile?.serverFileName) {
-        formData.append("videoFile", this.selectedVideoFile.serverFileName);
-      }
+        // Convert genres and instruments strings to arrays
+      this.formData.genres = this.formData.genres.split(",").map(item => item.trim());
+      this.formData.instruments = this.formData.instruments.split(",").map(item => item.trim());
 
       try {
-        const response = await api.uploadMusicSheet(formData, (progressEvent) => {
-          if (progressEvent.total) {
-            this.uploadProgress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
-          }
-        });
-
-        console.log("Upload successful:", response.data);
+        const response = await api.uploadMetadata(this.formData);
+        console.log("Metadata uploaded successfully:", response.data);
         this.resetForm();
         this.goBack();
       } catch (error) {
-        console.error("Error uploading files:", error);
+        console.error("Error uploading metadata:", error);
+        alert("Metadata upload failed. Please try again.");
       }
     },
-
-    async uploadVideoChunks(file, chunkSize) {
-      const totalChunks = Math.ceil(file.size / chunkSize);
-
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * chunkSize;
-        const end = Math.min(file.size, start + chunkSize);
-        const chunk = file.slice(start, end);
-
-        try {
-          await api.uploadVideoChunk({
-            chunk,
-            uploadId: this.videoFileId,
-            chunkIndex: i,
-            totalChunks,
-            fileName: file.name,
-          });
-          const chunkProgress = 100;
-
-          // Update progress for this chunk
-          this.videoChunkProgress[i] = chunkProgress;
-          this.videoChunkProgress = [...this.videoChunkProgress];
-
-          // Calculate overall progress
-          const totalProgress = this.videoChunkProgress.reduce(
-            (sum, progress) => sum + progress,
-            0
-          ) / totalChunks;
-
-          this.videoUploadProgress = Math.round(totalProgress);
-        } catch (error) {
-          console.error(`Error uploading chunk ${i}:`, error);
-          throw error;
-        }
-      }
-    }
   },
 };
 </script>

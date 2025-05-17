@@ -11,6 +11,6 @@
         public List<string> Genres { get; set; }
         public List<string> Instruments { get; set; }
         public IFormFile MusicFile { get; set; } // PDF/image file
-        public IFormFile VideoFile { get; set; } // Video file
+        public int UserId { get; set; } // The ID of the user who uploaded the music sheet
     }
 }

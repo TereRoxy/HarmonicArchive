@@ -20,9 +20,15 @@ namespace HarmonicArchiveBackend.Repository
             string sortBy = "title",
             string sortOrder = "asc",
             int page = 1,
-            int limit = 10)
+            int limit = 10,
+            int userId = 0)
         {
-            var query = _context.MusicSheets.AsQueryable();
+            var query = _context.MusicSheets
+                .AsNoTracking() // Add AsNoTracking here
+                .AsQueryable();
+
+            query = query.Where(ms => ms.UserId == userId);
+            
 
             // Apply filtering
             if (!string.IsNullOrEmpty(title) || !string.IsNullOrEmpty(composer))
@@ -79,6 +85,17 @@ namespace HarmonicArchiveBackend.Repository
                 })
                 .ToListAsync();
 
+        }
+
+        public async Task<List<MusicSheet>> GetByUserIdAsync(int userId)
+        {
+            return await _context.MusicSheets
+                .Where(ms => ms.UserId == userId)
+                .Include(ms => ms.Title)
+                .Include(ms => ms.Composer)
+                .Include(ms => ms.MusicSheetGenres).ThenInclude(msg => msg.Genre)
+                .Include(ms => ms.MusicSheetInstruments).ThenInclude(msi => msi.Instrument)
+                .ToListAsync();
         }
 
         public async Task<int> GetTotalCountAsync()

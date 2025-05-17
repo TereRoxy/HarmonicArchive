@@ -17,8 +17,7 @@ namespace HarmonicArchiveBackend.Services
                 .RuleFor(dto => dto.Key, f => f.PickRandom(new[] { "C", "G", "Dm", "Am", "F" })) // Generate a random key
                 .RuleFor(dto => dto.Genres, f => f.Make(2, () => f.Music.Genre())) // Generate a list of 2 random genres
                 .RuleFor(dto => dto.Instruments, f => f.Make(2, () => f.PickRandom(new[] { "Piano", "Guitar", "Violin", "Drums", "Flute" }))) // Generate a list of 2 random instruments
-                .RuleFor(dto => dto.MusicFileUrl, f => null) // Set MusicFile to null (file uploads are not handled here)
-                .RuleFor(dto => dto.VideoFileUrl, f => null); // Set VideoFile to null (file uploads are not handled here)
+                .RuleFor(dto => dto.MusicFileUrl, f => "string"); // Set MusicFile to null (file uploads are not handled here
 
             // Generate the specified number of MusicSheetDto objects
             return musicSheetDtoFaker.Generate(count);

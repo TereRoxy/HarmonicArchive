@@ -40,7 +40,9 @@ namespace HarmonicArchiveBackend.Data
         public List<string> Instruments { get; set; }
     
         [Required(ErrorMessage = "Music file is required.")]
-        public string MusicFileUrl { get; set; } // Accept the actual file    
-        public string VideoFileUrl { get; set; } // Accept the actual file
+        public string MusicFileUrl { get; set; } // Accept the actual file
+        
+        public int UserId { get; set; } // The ID of the user who uploaded the music sheet
+
     }
 }

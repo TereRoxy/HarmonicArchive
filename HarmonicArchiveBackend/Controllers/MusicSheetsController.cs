@@ -1,7 +1,9 @@
 ﻿using HarmonicArchiveBackend.Data;
 using HarmonicArchiveBackend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
+using System.Security.Claims;
 using WebSocketManager = HarmonicArchiveBackend.Services.WebSocketManager;
 
 [ApiController]
@@ -18,6 +20,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetMusicSheets(
         [FromQuery] string? title,
         [FromQuery] string? composer,
@@ -28,11 +31,18 @@ public class MusicSheetsController : ControllerBase
         [FromQuery] int _page = 1,
         [FromQuery] int _limit = 10)
     {
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+            return Unauthorized();
+
+        var userId = int.Parse(userIdClaim.Value);
+
+
         var genreList = genres?.Split(',').Select(g => g.Trim()).ToList();
         var instrumentList = instruments?.Split(',').Select(i => i.Trim()).ToList();
 
         var (musicSheets, totalCount) = await _service.GetAllMusicSheetsAsync(
-            title, composer, genreList, instrumentList, _sort, _order, _page, _limit);
+            title, composer, genreList, instrumentList, _sort, _order, _page, _limit, userId);
 
         return Ok(new
         {
@@ -64,7 +74,7 @@ public class MusicSheetsController : ControllerBase
         return Ok(new { Message = "Music Sheet created successfully" });
     }
 
-    [HttpPut("{id}")]
+    [HttpPatch("{id}")]
     public async Task<IActionResult> UpdateMusicSheet(int id, [FromBody] MusicSheetDto musicSheetDto)
     {
         if (!ModelState.IsValid)
@@ -131,17 +141,24 @@ public class MusicSheetsController : ControllerBase
         }
     }
 
-    [HttpPut("upload")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadMusicSheetFiles(IFormFile file)
+    [HttpPost("upload")]
+    public async Task<IActionResult> UploadMusicFile([FromForm] MusicFileUploadDto dto)
     {
-        if (!_service.ValidateFileType(file))
+        var musicFile = dto.MusicFile;
+        if (musicFile == null || musicFile.Length == 0)
+            return BadRequest("No file uploaded.");
+
+        var uploadsFolder = Path.Combine("UploadedFiles", "Music");
+        if (!Directory.Exists(uploadsFolder))
+            Directory.CreateDirectory(uploadsFolder);
+
+        var filePath = Path.Combine(uploadsFolder, musicFile.FileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
         {
-            return BadRequest(new { Message = "Invalid file type. Only images, PDFs, and videos are allowed." });
+            await musicFile.CopyToAsync(stream);
         }
 
-        // Proceed with file upload logic
-        var path = await _service.UploadMusicSheetFileAsync(file);
-        return Ok(new { FilePath = path });
+        return Ok(new { filePath = $"/UploadedFiles/Music/{musicFile.FileName}" });
     }
 }
