@@ -5,7 +5,7 @@
 namespace HarmonicArchiveBackend.Migrations
 {
     /// <inheritdoc />
-    public partial class ModifyTables : Migration
+    public partial class AddIndexesToMusicSheet : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

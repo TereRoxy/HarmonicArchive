@@ -17,5 +17,8 @@ public class MusicSheet
     public ICollection<MusicSheetInstrument> MusicSheetInstruments { get; set; } = [];
 
     public string MusicFilePath { get; set; } = string.Empty; // Path to the PDF/image file
-    public string VideoFilePath { get; set; } = string.Empty;// Path to the video file
+
+    // Add these for 1:n relationship
+    public int UserId { get; set; }
+    public User User { get; set; }
 }

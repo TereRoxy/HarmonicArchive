@@ -12,6 +12,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Instrument> Instruments { get; set; }
     public DbSet<MusicSheetGenre> MusicSheetGenres { get; set; }
     public DbSet<MusicSheetInstrument> MusicSheetInstruments { get; set; }
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,8 +25,29 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Title>()
         .Property(t => t.Name)
-        .HasMaxLength(255); // Limit the length to 255 characters
+        .HasMaxLength(256); // Limit the length to 256 characters
+
+        modelBuilder.Entity<MusicSheet>()
+        .HasOne(ms => ms.User)
+        .WithMany(u => u.MusicSheets)
+        .HasForeignKey(ms => ms.UserId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MusicSheet>()
+            .HasIndex(ms => ms.TitleId);
+
+        modelBuilder.Entity<MusicSheet>()
+            .HasIndex(ms => ms.ComposerId);
 
         base.OnModelCreating(modelBuilder);
     }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.EnableSensitiveDataLogging(); // Enable sensitive data logging
+        }
+    }
+
 }

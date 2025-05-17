@@ -23,16 +23,28 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigins", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://192.168.100.6:5173", "http://192.168.100.2:5173", "http://192.168.160.172:5173")
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
+builder.Services.AddAuthentication("MyCookieAuth")
+    .AddCookie("MyCookieAuth", options =>
+    {
+        options.LoginPath = "/api/users/login";
+        options.LogoutPath = "/api/users/logout";
+        options.Cookie.Name = "MyAuthCookie";
+    });
+
+
 // Register DbContext with scoped lifetime (default for AddDbContext)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
-        sqlOptions => sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.EnableSensitiveDataLogging();
+});
 
 // Register WebSocketManager as a singleton
 builder.Services.AddSingleton<WebSocketManager>();
@@ -97,8 +109,8 @@ app.UseExceptionHandler(errorApp =>
 // Serve static files
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
-    RequestPath = "/uploads"
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles/Music")),
+    RequestPath = "/UploadedFiles/Music"
 });
 
 app.UseCors("AllowSpecificOrigins");
@@ -112,6 +124,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.UseWebSockets();
@@ -130,18 +143,18 @@ app.Map("/ws", async context =>
     }
 });
 
-// Seed the database with 20 music sheets at startup
+//Seed the database with 20 music sheets at startup
 //using (var scope = app.Services.CreateScope())
 //{
 //    var serviceProvider = scope.ServiceProvider;
 //    var musicSheetService = serviceProvider.GetRequiredService<MusicSheetService>();
 
 //    // Generate 20 fake music sheets
-//    var fakeMusicSheets = MusicSheetGenerator.GenerateMusicSheets(20);
+//    var fakeMusicSheets = MusicSheetGenerator.GenerateMusicSheets(10000);
 
 //    foreach (var musicSheet in fakeMusicSheets)
 //    {
-//        await musicSheetService.AddMusicSheetAsync(musicSheet);
+//        await musicSheetService.AddMusicSheetFromDtoWithoutDuplicateCheckAsync(musicSheet);
 //    }
 //}
 

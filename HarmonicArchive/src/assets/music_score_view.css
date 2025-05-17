@@ -7,6 +7,15 @@
     "Source Han Sans CN", sans-serif;
 }
 
+.music-score-player {
+  width: 600px; /* Match the PdfViewer width */
+  height: 800px; /* Match the PdfViewer height */
+  overflow: hidden; /* Prevent content overflow */
+  display: flex; /* Ensure proper alignment */
+  justify-content: center;
+  align-items: center;
+}
+
 .music-score-container {
   display: flex;
   width: 100%;

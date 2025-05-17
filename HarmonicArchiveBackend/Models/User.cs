@@ -11,17 +11,18 @@ namespace HarmonicArchiveBackend.Models
         public string Username { get; set; }
 
         [Required]
-        [MaxLength(255)]
+        [MaxLength(256)]
         public string Password { get; set; } // Store hashed passwords, not plain text
 
         [Required]
         [EmailAddress]
+        [MaxLength(256)]
         public string Email { get; set; }
 
         [Required]
         [MaxLength(20)]
         public string Role { get; set; } // "normal" or "admin"
-
-        public ICollection<MusicSheet> MusicSheets { get; set; } = new List<MusicSheet>();
+       
+        public ICollection<MusicSheet> MusicSheets { get; set; }
     }
 }

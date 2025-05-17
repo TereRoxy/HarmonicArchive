@@ -6,6 +6,9 @@
         <div class="profile-text">
           <p>My Account</p>
           <div class="username-display"><p>username</p></div>
+        
+          <button class="logout-btn" @click="handleLogout">Logout</button>
+        
         </div>
       </div>
   
@@ -78,16 +81,17 @@
         <MusicSheetsChart :musicSheets="musicSheets" />
       </div>
 
-        <button @click="$emit('toggleWorker')" class="worker-btn">
+        <!-- <button @click="$emit('toggleWorker')" class="worker-btn">
           {{ workerActive ? "Stop Generator" : "Start Generator" }}
-        </button>
+        </button> -->
 
     </div>
   </template>
   
   <script>
   import MusicSheetsChart from "./MusicSheetsChart.vue";
-  
+  import { logout } from "../services/api";
+
   export default {
     components: { MusicSheetsChart },
     props: {
@@ -107,9 +111,42 @@
         isInstrumentsOpen: false,
       };
     },
+
+    methods: {
+      async handleLogout() {
+        try {
+          await logout(); // Call the logout API
+          localStorage.removeItem("authToken"); // Remove the token from localStorage
+          this.$router.push("/"); // Redirect to the login page
+        } catch (error) {
+          console.error("Logout error:", error);
+        }
+      },
+    },
   };
   </script>
   
   <style scoped>
   /* Add any specific styles for Sidebar.vue here */
+  .profile-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.logout-btn {
+  background-color: #532b88;
+  color: #f4effa;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.logout-btn:hover {
+  background-color: #6a3dbb;
+}
+  
   </style>

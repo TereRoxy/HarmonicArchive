@@ -21,9 +21,10 @@ namespace HarmonicArchiveBackend.Services
     string sortBy = "title",
     string sortOrder = "asc",
     int page = 1,
-    int limit = 10)
+    int limit = 10,
+    int userId = 0)
         {
-            var musicSheets = await _repository.GetAllAsync(title, composer, genres, instruments, sortBy, sortOrder, page, limit);
+            var musicSheets = await _repository.GetAllAsync(title, composer, genres, instruments, sortBy, sortOrder, page, limit, userId);
             var totalCount = await _repository.GetTotalCountAsync();
 
             // Map MusicSheet entities to MusicSheetDto
@@ -37,7 +38,7 @@ namespace HarmonicArchiveBackend.Services
                 Genres = ms.MusicSheetGenres.Select(g => g.Genre.Name).ToList(),
                 Instruments = ms.MusicSheetInstruments.Select(i => i.Instrument.Name).ToList(),
                 MusicFileUrl = ms.MusicFilePath, // File handling is not included in the DTO
-                VideoFileUrl = ms.VideoFilePath  // File handling is not included in the DTO
+                UserId = ms.UserId
             }).ToList();
 
             return (musicSheetDtos, totalCount);
@@ -62,7 +63,7 @@ namespace HarmonicArchiveBackend.Services
                 Genres = musicSheet.MusicSheetGenres.Select(g => g.Genre.Name).ToList(),
                 Instruments = musicSheet.MusicSheetInstruments.Select(i => i.Instrument.Name).ToList(),
                 MusicFileUrl = musicSheet.MusicFilePath, // File handling is not included in the DTO
-                VideoFileUrl = musicSheet.VideoFilePath  // File handling is not included in the DTO
+                UserId = musicSheet.UserId
             };
         }
 
@@ -78,7 +79,6 @@ namespace HarmonicArchiveBackend.Services
                 Key = dto.Key,
                 Year = dto.Year,
                 MusicFilePath = dto.MusicFileUrl,
-                VideoFilePath = dto.VideoFileUrl,
                 Title = new Title { Name = dto.Title },
                 Composer = new Composer { Name = dto.Composer },
                 MusicSheetGenres = dto.Genres.Select(genre =>
@@ -96,6 +96,31 @@ namespace HarmonicArchiveBackend.Services
                     {
                         Instrument = existingInstrument ?? new Instrument { Name = instrument }
                     };
+                }).ToList(),
+                UserId = dto.UserId
+            };
+
+            // Save the MusicSheet entity to the database
+            await _repository.AddAsync(musicSheet);
+        }
+
+        public async Task AddMusicSheetFromDtoWithoutDuplicateCheckAsync(MusicSheetDto dto)
+        {
+            // Map the DTO to the MusicSheet entity
+            var musicSheet = new MusicSheet
+            {
+                Key = dto.Key,
+                Year = dto.Year,
+                MusicFilePath = dto.MusicFileUrl,
+                Title = new Title { Name = dto.Title },
+                Composer = new Composer { Name = dto.Composer },
+                MusicSheetGenres = dto.Genres.Select(genre => new MusicSheetGenre
+                {
+                    Genre = new Genre { Name = genre }
+                }).ToList(),
+                MusicSheetInstruments = dto.Instruments.Select(instrument => new MusicSheetInstrument
+                {
+                    Instrument = new Instrument { Name = instrument }
                 }).ToList()
             };
 
@@ -119,8 +144,6 @@ namespace HarmonicArchiveBackend.Services
             existingMusicSheet.Key = dto.Key;
             existingMusicSheet.Year = dto.Year;
             existingMusicSheet.MusicFilePath = dto.MusicFileUrl ?? existingMusicSheet.MusicFilePath;
-            existingMusicSheet.VideoFilePath = dto.VideoFileUrl ?? existingMusicSheet.VideoFilePath;
-
             if (existingMusicSheet.Title == null || existingMusicSheet.Title.Name != dto.Title)
             {
                 existingMusicSheet.Title = new Title { Name = dto.Title };

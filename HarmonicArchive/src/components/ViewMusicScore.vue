@@ -1,10 +1,15 @@
 <template>
   <div class="music-score-container" v-if="musicSheet">
     <div class="music-score-section">
-      <!-- <div class="pdf-viewer" v-if="musicSheet.link">
-        <pdf-viewer :source="musicSheet.link" />
-      </div> > -->
-      <!-- <iframe :src="musicSheet.link" frameborder="0" class="pdf-iframe"></iframe> -->
+      <div class="music-score-player">
+        <PdfViewer
+          :src="musicSheet.musicFileUrl"
+          :width="600"
+          :height="800"
+          :show-download-button="false"
+          :show-print-button="false"
+        />
+      </div>
       <div class="music-score-details">
         <div class="music-score-header">
           <h1 class="music-score-title">
@@ -26,16 +31,13 @@
         <div class="music-score-year">Year: {{ musicSheet.year }}</div>
 
         <div class="music-score-actions">
-          <button class="action-button download-button" @click="downloadFiles">Download</button>
-          <button class="action-button collection-button">
-            Add to a collection
-          </button>
           <button class="action-button modify-button" @click="startEditing">
             {{ isEditing ? "Cancel" : "Modify" }}
           </button>
           <button class="action-button delete-button" @click="deleteMusicSheet">
             Delete
           </button>
+          <button class="action-button download-button" @click="downloadFiles">Download</button>
         </div>
 
         <div class="modify-form" v-if="isEditing">
@@ -186,23 +188,31 @@ export default {
       this.isEditing = false;
     },
     async saveChanges() {
-      const updatedSheet = {
-        ...this.musicSheet,
-        title: this.editData.title,
-        composer: this.editData.composer,
-        year: Number(this.editData.year),
-        key: this.editData.key,
-        genres: this.editData.genre.split(",").map((g) => g.trim()),
-      };
-
-      console.log("Saving changes for music sheet:", updatedSheet);
-
       try {
-        await api.updateMusicSheet(this.musicSheet.id, updatedSheet); // Update the sheet via API
+        const updatedData = {
+          title: this.editData.title,
+          composer: this.editData.composer,
+          year: this.editData.year,
+          key: this.editData.key,
+          genres: this.editData.genre.split(",").map((g) => g.trim()), // Convert comma-separated genres to an array
+          instruments: this.musicSheet.instruments, // Keep instruments unchanged for now
+          musicFileUrl: this.musicSheet.musicFileUrl, // Ensure this is set
+        };
+
+        if (!updatedData.musicFileUrl) {
+          throw new Error("Music file URL is required.");
+        }
+
+        await api.updateMusicSheet(this.musicSheet.id, updatedData);
         console.log("Music sheet updated successfully.");
-        this.musicSheet = updatedSheet; // Update the local data
-        this.isEditing = false;
-        alert("Changes saved successfully!");
+
+        // Update the `musicSheet` object with the new values
+        this.musicSheet = {
+          ...this.musicSheet,
+          ...updatedData,
+        };
+
+        this.isEditing = false; // Exit editing mode
       } catch (error) {
         console.error("Error saving changes:", error);
       }
@@ -228,23 +238,15 @@ export default {
         key: data.key,
         genres: data.genres || data.musicSheetGenres?.map(g => g.genre?.name) || [],
         instruments: data.instruments || data.musicSheetInstruments || [],
-        musicFilePath: data.musicFilePath,
-        videoFilePath: data.videoFilePath,
-        link: data.musicFilePath ? api.getFileUrl(data.musicFilePath) : null,
-        videoLink: data.videoFilePath ? api.getFileUrl(data.videoFilePath) : null
+        musicFileUrl: data.musicFileUrl || data.musicFilePath || data.musicFilePath?.filePath || '', // Adjust based on your API response
       };
     },
 
     async downloadFiles() {
       try {
         // Download the PDF file
-        if (this.musicSheet.link) {
-          await this.downloadFile(this.musicSheet.link, `${this.musicSheet.title}.pdf`);
-        }
-
-        // Download the video file (if it exists)
-        if (this.musicSheet.videoLink) {
-          await this.downloadFile(this.musicSheet.videoLink, `${this.musicSheet.title}-video.mp4`);
+        if (this.musicSheet.musicFileUrl) {
+          await this.downloadFile(this.musicSheet.musicFileUrl, `${this.musicSheet.title}.pdf`);
         }
 
         alert("Files downloaded successfully!");
