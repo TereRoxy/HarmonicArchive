@@ -38,6 +38,12 @@ const routes = [
       }
     },
   },
+  {
+    path: "/my-account",
+    name: "MyAccount",
+    component: () => import("./components/MyAccount.vue"),
+    // meta: { requiresAuth: true },
+  },
 ];
 
 const router = createRouter({

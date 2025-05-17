@@ -111,9 +111,29 @@ export const uploadMetadata = async (metadata) => {
 export const getCurrentUser = async () => {
   try {
     const response = await api.get("/Users/current");
-    return response.data;
+    return response.data; // Ensure this contains `username`
   } catch (error) {
     console.error("Error fetching current user:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const updateUser = async (id, updatedData) => {
+  try {
+    console.log("Updating user with ID:", id, "and data:", updatedData);
+    const response = await api.put(`/Users/${id}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating user:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const deleteUser = async (id) => {
+  try {
+    await api.delete(`/Users/${id}`);
+  } catch (error) {
+    console.error("Error deleting user:", error.response?.data || error.message);
     throw error;
   }
 };
@@ -126,6 +146,8 @@ export default {
   logout,
   getFileUrl,
   getCurrentUser,
+  updateUser,
+  deleteUser,
   // Music Sheets CRUD operations
   getMusicSheets(params = {}) {
     const queryParams = { ...params};

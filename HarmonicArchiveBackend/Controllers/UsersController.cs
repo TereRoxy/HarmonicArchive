@@ -55,7 +55,11 @@ namespace HarmonicArchiveBackend.Controllers
             if (userIdClaim == null)
                 return Unauthorized();
 
-            return Ok(new { userId = int.Parse(userIdClaim.Value) });
+            var user = _context.Users.FirstOrDefault(u => u.Id == int.Parse(userIdClaim.Value));
+            if (user == null)
+                return NotFound();
+
+            return Ok(new { userId = user.Id, username = user.Username, email = user.Email });
         }
 
         [HttpGet("{id}")]
@@ -105,7 +109,7 @@ namespace HarmonicArchiveBackend.Controllers
 
         // PUT: api/Users/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, User updatedUser)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto updatedUser)
         {
             if (id != updatedUser.Id)
                 return BadRequest();
@@ -114,16 +118,24 @@ namespace HarmonicArchiveBackend.Controllers
             if (user == null)
                 return NotFound();
 
+            // Validate the old password
+            if (!string.IsNullOrWhiteSpace(updatedUser.OldPassword) &&
+                !BCrypt.Net.BCrypt.Verify(updatedUser.OldPassword, user.Password))
+            {
+                return BadRequest(new { message = "Old password is incorrect." });
+            }
+
+            // Update fields
             user.Username = updatedUser.Username;
             user.Email = updatedUser.Email;
-            user.Role = updatedUser.Role;
+
+            // Update the password if a new password is provided
             if (!string.IsNullOrWhiteSpace(updatedUser.Password))
                 user.Password = BCrypt.Net.BCrypt.HashPassword(updatedUser.Password);
 
             await _context.SaveChangesAsync();
             return NoContent();
         }
-
 
         // DELETE: api/Users/5
         [HttpDelete("{id}")]
