@@ -8,21 +8,22 @@ Harmonic Archive is a web application designed to help musicians, composers, and
 - **Sorting and Pagination**: Sort music sheets by title, composer, or year, and navigate through your collection with pagination controls.
 - **Upload Music Sheets**: Add new music sheets to your archive with a simple upload feature.
 - **Music Sheet Details**: View detailed information about each music sheet, including title, composer, genre, and instrument.
-- **Music Sheet Preview**: Preview music sheets in PDF format directly within the app.
+- **Music Sheet Preview**: Preview music sheets in PDF format directly within the app (coming soon).
 - **Music Sheet Metadata**: Add and edit metadata for each music sheet, including title, composer, genre, and instrument.
-- **Upload Video Performance**: Upload a video performance for each music sheet to showcase your interpretation of the piece.
+- **User Authentication**: Secure your music sheets with user authentication (in alpha).
 
 Harmonic Archive is the perfect tool for anyone looking to keep their music sheet collection organized and accessible.
 
 
 ## Development Stage
-The project is currently under development. Currently working on refining UI/UX and fixing bugs and errors. Future updates will include additional features such as user authentication, admin mode, https and protection against unusual traffic.
+The project is currently under development. Currently working on refining UI/UX and fixing bugs and errors. Future updates will include additional features such as user authentication (with JWT), admin mode, and https.
 The current version is a prototype and is not yet ready for production use as it is unstable and is lacking thorugh testing.
 
 ## Tech Stack
 - **Frontend**: Vue.js, Chart.js
 - **Backend**: ASP.NET Core + C#, Entity Framework Core
-- **Database**: SQL Server
+- **Database**: PostgreSQL
+- **Security**: Session based cookies, Passwords stored hashed, JWT Authentication (coming soon), HTTPS (coming soon)
 
 ## Requirements
 - npm (v6 or higher)
@@ -35,4 +36,4 @@ The current version is a prototype and is not yet ready for production use as it
 - PDF.js (v2.0 or higher)
 - ASP.NET Core SDK (v5.0 or higher)
 - Entity Framework Core (v5.0 or higher)
-- SQL Server (v2017 or higher)
+- PostgreSQL (v12 or higher)
