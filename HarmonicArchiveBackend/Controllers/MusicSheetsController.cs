@@ -52,6 +52,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetMusicSheetById(int id)
     {
         var musicSheet = await _service.GetMusicSheetByIdAsync(id);
@@ -63,6 +64,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> CreateMusicSheet([FromBody] MusicSheetDto musicSheet)
     {
         if (!ModelState.IsValid)
@@ -75,6 +77,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpPatch("{id}")]
+    [Authorize]
     public async Task<IActionResult> UpdateMusicSheet(int id, [FromBody] MusicSheetDto musicSheetDto)
     {
         if (!ModelState.IsValid)
@@ -94,6 +97,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> DeleteMusicSheet(int id)
     {
         await _service.DeleteMusicSheetAsync(id);
@@ -142,6 +146,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpPost("upload")]
+    [Authorize]
     public async Task<IActionResult> UploadMusicFile([FromForm] MusicFileUploadDto dto)
     {
         var musicFile = dto.MusicFile;
@@ -160,5 +165,24 @@ public class MusicSheetsController : ControllerBase
         }
 
         return Ok(new { filePath = $"/UploadedFiles/Music/{musicFile.FileName}" });
+    }
+
+    [HttpGet("current/tags")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUserTags()
+    {
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+            return Unauthorized();
+
+        var userId = int.Parse(userIdClaim.Value);
+
+        var (genres, instruments) = await _service.GetUniqueTagsForUserAsync(userId);
+
+        return Ok(new
+        {
+            Genres = genres,
+            Instruments = instruments
+        });
     }
 }

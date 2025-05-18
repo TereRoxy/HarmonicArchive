@@ -241,5 +241,23 @@ namespace HarmonicArchiveBackend.Services
 
             return true;
         }
+
+        public async Task<(List<string> Genres, List<string> Instruments)> GetUniqueTagsForUserAsync(int userId)
+        {
+            var musicSheets = await _repository.GetMusicSheetsByUserIdAsync(userId);
+
+            // Extract unique genres and instruments
+            var uniqueGenres = musicSheets
+                .SelectMany(ms => ms.MusicSheetGenres.Select(g => g.Genre.Name))
+                .Distinct()
+                .ToList();
+
+            var uniqueInstruments = musicSheets
+                .SelectMany(ms => ms.MusicSheetInstruments.Select(i => i.Instrument.Name))
+                .Distinct()
+                .ToList();
+
+            return (uniqueGenres, uniqueInstruments);
+        }
     }
 }

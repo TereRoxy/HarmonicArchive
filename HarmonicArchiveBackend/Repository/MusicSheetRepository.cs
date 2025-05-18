@@ -144,5 +144,16 @@ namespace HarmonicArchiveBackend.Repository
                 .Where(i => instrumentNames.Contains(i.Name))
                 .ToListAsync();
         }
+
+        public async Task<List<MusicSheet>> GetMusicSheetsByUserIdAsync(int userId)
+        {
+            return await _context.MusicSheets
+                .Where(ms => ms.UserId == userId)
+                .Include(ms => ms.MusicSheetGenres)
+                .ThenInclude(msg => msg.Genre)
+                .Include(ms => ms.MusicSheetInstruments)
+                .ThenInclude(msi => msi.Instrument)
+                .ToListAsync();
+        }
     }
 }

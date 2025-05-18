@@ -27,6 +27,8 @@
         </div>
         <transition name="slide-fade">
           <div v-if="isGenreOpen" class="filter-chips">
+            <p v-if="isLoadingGenres">Loading genres...</p>
+            <p v-else-if="genres.length === 0">No genres found</p>
             <div
               v-for="(genre, index) in genres"
               :key="index"
@@ -54,6 +56,8 @@
         </div>
         <transition name="slide-fade">
           <div v-if="isInstrumentsOpen" class="filter-chips">
+            <p v-if="isLoadingInstruments">Loading instruments...</p>
+            <p v-else-if="instruments.length === 0">No instruments found</p>
             <div
               v-for="(instrument, index) in instruments"
               :key="index"
@@ -83,15 +87,37 @@
 
 <script>
 import MusicSheetsChart from "./MusicSheetsChart.vue";
-import { getCurrentUser, logout } from "../services/api";
+import { getCurrentUser, getCurrentUserTags, logout } from "../services/api";
 
 export default {
   components: { MusicSheetsChart },
   props: {
-    genres: Array,
-    instruments: Array,
-    selectedGenres: Array,
-    selectedInstruments: Array,
+    genres: {
+      type: Array,
+      required: true,
+    },
+    instruments: {
+      type: Array,
+      required: true,
+    },
+    selectedGenres: {
+      type: Array,
+      required: true,
+    },
+    selectedInstruments: {
+      type: Array,
+      required: true,
+    },
+
+    isLoadingGenres: {
+      type: Boolean,
+      required: true,
+    },
+    isLoadingInstruments: {
+      type: Boolean,
+      required: true,
+    },
+
     musicSheets: {
       type: Array,
       default: () => [], // Provide empty array as default
@@ -104,16 +130,6 @@ export default {
       isGenreOpen: false,
       isInstrumentsOpen: false,
     };
-  },
-
-  async mounted() {
-    try {
-      const currentUser = await getCurrentUser();
-      console.log("Current User:", currentUser);
-      this.username = currentUser.username;
-    } catch (error) {
-      console.error("Error fetching username:", error);
-    }
   },
 
   methods: {
