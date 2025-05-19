@@ -40,12 +40,12 @@ namespace HarmonicArchiveBackend.Repository
 
             if (genres != null && genres.Any())
             {
-                query = query.Where(ms => ms.MusicSheetGenres.Any(msg => genres.Equals(msg.Genre.Name)));
+                query = query.Where(ms => ms.MusicSheetGenres.Any(msg => genres.Contains(msg.Genre.Name)));
             }
 
             if (instruments != null && instruments.Any())
             {
-                query = query.Where(ms => ms.MusicSheetInstruments.Any(msi => instruments.Equals(msi.Instrument.Name)));
+                query = query.Where(ms => ms.MusicSheetInstruments.Any(msi => instruments.Contains(msi.Instrument.Name)));
             }
 
             // Apply sorting
