@@ -2,6 +2,10 @@
   <div class="sidebar">
     <!-- Profile Section -->
     <div class="profile-section">
+       <!-- Sidebar Toggle Button (Visible on Mobile) -->
+      <button class="sidebar-toggle" @click="isSidebarOpen = !isSidebarOpen">
+        ☰
+      </button>
       <img src="../assets/images/profile.png" alt="Profile" class="profile-img" />
       <div class="profile-info">
         <router-link to="/my-account" class="my-account-btn">My Account</router-link>
@@ -132,6 +136,16 @@ export default {
     };
   },
 
+  async mounted() {
+    try {
+      const user = await getCurrentUser(); // Fetch the current user
+      this.username = user.username || "Guest"; // Set the username or default to "Guest"
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      this.username = "Guest"; // Fallback to "Guest" in case of error
+    }
+  },
+
   methods: {
     async handleLogout() {
       try {
@@ -143,12 +157,6 @@ export default {
       }
     },
   },
-
-  watch: {
-  username(newValue) {
-    console.log("Username updated:", newValue);
-  },
-},
 };
 </script>
 
@@ -198,7 +206,7 @@ export default {
   background-color: #532b88;
   color: #f4effa;
   border: none;
-  border-radius: 5px;
+  border-radius: 5px 10px 5px 10px;
   padding: 5px 10px;
   cursor: pointer;
   font-size: 14px;
@@ -207,4 +215,51 @@ export default {
 .logout-btn:hover {
   background-color: #6a3dbb;
 }
+
+.sidebar {
+  flex: 0 0 250px;
+  background-color: #9b72cf;
+  padding: 20px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease-in-out;
+}
+
+.sidebar-collapsed {
+  transform: translateX(-100%);
+}
+
+.sidebar-toggle {
+  display: none;
+  background-color: #532b88;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 999;
+    transform: translateX(-100%);
+  }
+
+  .sidebar-collapsed {
+    transform: translateX(0);
+  }
+
+  .sidebar-toggle {
+    display: block;
+  }
+}
+
 </style>

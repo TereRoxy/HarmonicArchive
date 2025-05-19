@@ -1,7 +1,9 @@
 using HarmonicArchiveBackend.Data;
 using HarmonicArchiveBackend.Repository;
 using HarmonicArchiveBackend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;

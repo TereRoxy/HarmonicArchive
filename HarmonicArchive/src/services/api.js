@@ -9,15 +9,6 @@ const api = axios.create({
   withCredentials: true, // Include credentials for CORS requests
 });
 
-// Helper function to get file URLs
-export const getFileUrl = (path, fileType = 'music') => {
-  if (!path) {
-    console.error('Invalid path provided:', path);
-    return null;
-  }
-  return `${BASE_URL}/${path}`;
-};
-
 // Login API
 export const login = async (username, password) => {
   try {
@@ -97,7 +88,7 @@ export const uploadMetadata = async (metadata) => {
       genres: metadata.genres || [], // Default to an empty array if not provided
       instruments: metadata.instruments || [], // Default to an empty array if not provided
       musicFileUrl: metadata.musicFileUrl,
-      // userId: metadata.userId || 1, // Default to 0 if not provided
+      userId: metadata.userId
     };
 
     const response = await api.post("/MusicSheets", payload);
@@ -148,13 +139,23 @@ export const getCurrentUserTags = async () => {
   }
 };
 
+// services/api.js
+export const getFileUrl = (path, fileType = 'music') => {
+  if (!path) {
+    console.error('Invalid path provided:', path);
+    return null;
+  }
+  // Ensure path doesn't start with a slash to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `${BASE_URL}/${cleanPath}`;
+};
+
 export default {
   uploadMusicFile,
   uploadMetadata,
   login,
   register,
   logout,
-  getFileUrl,
   getCurrentUser,
   updateUser,
   deleteUser,
