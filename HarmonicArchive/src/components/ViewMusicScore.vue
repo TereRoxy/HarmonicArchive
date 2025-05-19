@@ -2,13 +2,27 @@
   <div class="music-score-container" v-if="musicSheet">
     <div class="music-score-section">
       <div class="music-score-player">
-        <PdfViewer
-          :src="musicSheet.musicFileUrl"
-          :width="600"
-          :height="800"
-          :show-download-button="false"
-          :show-print-button="false"
-        />
+        <!-- Updated PDF Viewer -->
+        <div v-if="pdfError" class="pdf-error">
+          Error loading PDF: {{ pdfError }}
+          <button @click="loadPdf">Retry</button>
+        </div>
+        <div v-else-if="pdfLoading" class="pdf-loading">
+          Loading PDF...
+        </div>
+        <object
+          v-else
+          :data="pdfUrl"
+          type="application/pdf"
+          width="100%"
+          height="800"
+          class="pdf-viewer"
+        >
+          <p>
+            Your browser doesn't support PDF viewing. 
+            <a :href="pdfUrl" download>Download instead</a>
+          </p>
+        </object>
       </div>
       <div class="music-score-details">
         <div class="music-score-header">
@@ -116,6 +130,7 @@
 <script>
 import PdfViewer from "pdf-viewer-vue";
 import api from "../services/api"; // Import the API
+import { getFileUrl } from "../services/api"; // Adjust the import path as necessary
 
 export default {
   components: {
@@ -125,16 +140,6 @@ export default {
     id: {
       type: [String, Number],
       required: true
-    }
-  },
-  watch: {
-    id: {
-      immediate: true,
-      handler(newId) {
-        if (newId) {
-          this.fetchMusicSheet();
-        }
-      }
     }
   },
   data() {
@@ -148,15 +153,24 @@ export default {
         key: "",
         genre: "",
       },
+      pdfUrl: null,
+      pdfLoading: false,
+      pdfError: null,
     };
   },
+
+
   watch: {
-    id(newId) {
-      if (newId) {
-        this.fetchMusicSheet();
+    'musicSheet.musicFileUrl': {
+      immediate: true,
+      handler(newUrl) {
+        if (newUrl) {
+          this.loadPdf();
+        }
       }
     }
-},
+  },
+
   created() {
     this.fetchMusicSheet();
   },
@@ -171,7 +185,34 @@ export default {
         console.error("Error fetching music sheet:", error);
         this.loading = false;
       }
+      console.log(this.musicSheet.musicFileUrl)
     },
+
+    async loadPdf() {
+      this.pdfLoading = true;
+      this.pdfError = null;
+      try {
+        if (!this.musicSheet.musicFileUrl) {
+          throw new Error("No music file URL provided.");
+        }
+        // Construct full URL using getFileUrl
+        this.pdfUrl = getFileUrl(this.musicSheet.musicFileUrl);
+        this.pdfLoading = false;
+      } catch (error) {
+        this.pdfError = error.message;
+        this.pdfLoading = false;
+      }
+    },
+
+    async downloadFiles() {
+      if (this.pdfUrl) {
+        const link = document.createElement('a');
+        link.href = this.pdfUrl;
+        link.download = `${this.musicSheet.title}.pdf`;
+        link.click();
+      }
+    },
+
     startEditing() {
       this.isEditing = !this.isEditing;
       if (this.isEditing) {
@@ -238,44 +279,34 @@ export default {
         key: data.key,
         genres: data.genres || data.musicSheetGenres?.map(g => g.genre?.name) || [],
         instruments: data.instruments || data.musicSheetInstruments || [],
-        musicFileUrl: data.musicFileUrl || data.musicFilePath || data.musicFilePath?.filePath || '', // Adjust based on your API response
+        musicFileUrl: data.musicFileUrl || '', // Adjust based on your API response
       };
     },
 
-    async downloadFiles() {
-      try {
-        // Download the PDF file
-        if (this.musicSheet.musicFileUrl) {
-          await this.downloadFile(this.musicSheet.musicFileUrl, `${this.musicSheet.title}.pdf`);
-        }
-
-        alert("Files downloaded successfully!");
-      } catch (error) {
-        console.error("Error downloading files:", error);
-        alert("An error occurred while downloading the files.");
-      }
-    },
-
-    async downloadFile(url, filename) {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch file: ${url}`);
-        }
-
-        const blob = await response.blob();
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (error) {
-        console.error("Error downloading file:", error);
-      }
-    },
   },
 };
 </script>
 
-<style src="../assets/music_score_view.css"></style>
+<style src="../assets/music_score_view.css">
+.pdf-viewer {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-height: 800px;
+}
+
+.pdf-loading, .pdf-error {
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #eee;
+  min-height: 800px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.pdf-error {
+  color: #d32f2f;
+  border-color: #ffcdd2;
+}
+</style>

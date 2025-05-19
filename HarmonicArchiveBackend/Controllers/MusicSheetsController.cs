@@ -52,6 +52,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetMusicSheetById(int id)
     {
         var musicSheet = await _service.GetMusicSheetByIdAsync(id);
@@ -63,6 +64,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> CreateMusicSheet([FromBody] MusicSheetDto musicSheet)
     {
         if (!ModelState.IsValid)
@@ -70,11 +72,22 @@ public class MusicSheetsController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+            return Unauthorized();
+
+        var userId = int.Parse(userIdClaim.Value);
+
+        // Ensure the userId from the payload matches the authenticated user's ID
+        if (musicSheet.UserId != userId)
+            return Unauthorized("User ID mismatch.");
+
         await _service.AddMusicSheetFromDtoAsync(musicSheet);
         return Ok(new { Message = "Music Sheet created successfully" });
     }
 
     [HttpPatch("{id}")]
+    [Authorize]
     public async Task<IActionResult> UpdateMusicSheet(int id, [FromBody] MusicSheetDto musicSheetDto)
     {
         if (!ModelState.IsValid)
@@ -94,6 +107,7 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<IActionResult> DeleteMusicSheet(int id)
     {
         await _service.DeleteMusicSheetAsync(id);
@@ -142,23 +156,51 @@ public class MusicSheetsController : ControllerBase
     }
 
     [HttpPost("upload")]
+    [Authorize]
     public async Task<IActionResult> UploadMusicFile([FromForm] MusicFileUploadDto dto)
     {
         var musicFile = dto.MusicFile;
         if (musicFile == null || musicFile.Length == 0)
             return BadRequest("No file uploaded.");
 
+        // Validate file type (only PDFs)
+        if (!musicFile.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            return BadRequest("Only PDF files are allowed.");
+
         var uploadsFolder = Path.Combine("UploadedFiles", "Music");
         if (!Directory.Exists(uploadsFolder))
             Directory.CreateDirectory(uploadsFolder);
 
-        var filePath = Path.Combine(uploadsFolder, musicFile.FileName);
+        // Sanitize filename to prevent path traversal
+        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(musicFile.FileName); // Use GUID for uniqueness
+        var filePath = Path.Combine(uploadsFolder, fileName);
 
         using (var stream = new FileStream(filePath, FileMode.Create))
         {
             await musicFile.CopyToAsync(stream);
         }
 
-        return Ok(new { filePath = $"/UploadedFiles/Music/{musicFile.FileName}" });
+        // Return relative path
+        return Ok(new { filePath = $"/UploadedFiles/Music/{fileName}" });
     }
+
+    [HttpGet("current/tags")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUserTags()
+    {
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+            return Unauthorized();
+
+        var userId = int.Parse(userIdClaim.Value);
+
+        var (genres, instruments) = await _service.GetUniqueTagsForUserAsync(userId);
+
+        return Ok(new
+        {
+            Genres = genres,
+            Instruments = instruments
+        });
+    }
+
 }

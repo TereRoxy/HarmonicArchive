@@ -52,6 +52,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
+
   const isAuthenticated = !!localStorage.getItem("authToken"); // Check if the token exists
   if (to.name !== "LoginRegister" && !isAuthenticated) {
     next({ name: "LoginRegister" }); // Redirect to login if not authenticated

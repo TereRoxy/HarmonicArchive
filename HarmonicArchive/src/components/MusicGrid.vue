@@ -9,7 +9,7 @@
       <div class="item-info">
         <h3>{{ musicSheet.title }}</h3>
         <p><strong>Composer:</strong> {{ musicSheet.composer }}</p>
-        <p> <strong>Genres:</strong>
+        <p> <strong>Genres: </strong>
           <span
                 v-for="(genre, index) in musicSheet.genres"
                 :key="index"
@@ -19,7 +19,7 @@
         </p>
 
         <p>
-          <strong>Instruments:</strong>
+          <strong>Instruments: </strong>
           <span
             v-for="(instrument, index) in musicSheet.instruments"
             :key="index"

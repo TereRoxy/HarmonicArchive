@@ -2,6 +2,10 @@
   <div class="sidebar">
     <!-- Profile Section -->
     <div class="profile-section">
+       <!-- Sidebar Toggle Button (Visible on Mobile) -->
+      <button class="sidebar-toggle" @click="isSidebarOpen = !isSidebarOpen">
+        ☰
+      </button>
       <img src="../assets/images/profile.png" alt="Profile" class="profile-img" />
       <div class="profile-info">
         <router-link to="/my-account" class="my-account-btn">My Account</router-link>
@@ -27,6 +31,8 @@
         </div>
         <transition name="slide-fade">
           <div v-if="isGenreOpen" class="filter-chips">
+            <p v-if="isLoadingGenres">Loading genres...</p>
+            <p v-else-if="genres.length === 0">No genres found</p>
             <div
               v-for="(genre, index) in genres"
               :key="index"
@@ -54,6 +60,8 @@
         </div>
         <transition name="slide-fade">
           <div v-if="isInstrumentsOpen" class="filter-chips">
+            <p v-if="isLoadingInstruments">Loading instruments...</p>
+            <p v-else-if="instruments.length === 0">No instruments found</p>
             <div
               v-for="(instrument, index) in instruments"
               :key="index"
@@ -83,15 +91,37 @@
 
 <script>
 import MusicSheetsChart from "./MusicSheetsChart.vue";
-import { getCurrentUser, logout } from "../services/api";
+import { getCurrentUser, getCurrentUserTags, logout } from "../services/api";
 
 export default {
   components: { MusicSheetsChart },
   props: {
-    genres: Array,
-    instruments: Array,
-    selectedGenres: Array,
-    selectedInstruments: Array,
+    genres: {
+      type: Array,
+      required: true,
+    },
+    instruments: {
+      type: Array,
+      required: true,
+    },
+    selectedGenres: {
+      type: Array,
+      required: true,
+    },
+    selectedInstruments: {
+      type: Array,
+      required: true,
+    },
+
+    isLoadingGenres: {
+      type: Boolean,
+      required: true,
+    },
+    isLoadingInstruments: {
+      type: Boolean,
+      required: true,
+    },
+
     musicSheets: {
       type: Array,
       default: () => [], // Provide empty array as default
@@ -108,11 +138,11 @@ export default {
 
   async mounted() {
     try {
-      const currentUser = await getCurrentUser();
-      console.log("Current User:", currentUser);
-      this.username = currentUser.username;
+      const user = await getCurrentUser(); // Fetch the current user
+      this.username = user.username || "Guest"; // Set the username or default to "Guest"
     } catch (error) {
-      console.error("Error fetching username:", error);
+      console.error("Error fetching user data:", error);
+      this.username = "Guest"; // Fallback to "Guest" in case of error
     }
   },
 
@@ -127,12 +157,6 @@ export default {
       }
     },
   },
-
-  watch: {
-  username(newValue) {
-    console.log("Username updated:", newValue);
-  },
-},
 };
 </script>
 
@@ -182,7 +206,7 @@ export default {
   background-color: #532b88;
   color: #f4effa;
   border: none;
-  border-radius: 5px;
+  border-radius: 5px 10px 5px 10px;
   padding: 5px 10px;
   cursor: pointer;
   font-size: 14px;
@@ -191,4 +215,51 @@ export default {
 .logout-btn:hover {
   background-color: #6a3dbb;
 }
+
+.sidebar {
+  flex: 0 0 250px;
+  background-color: #9b72cf;
+  padding: 20px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease-in-out;
+}
+
+.sidebar-collapsed {
+  transform: translateX(-100%);
+}
+
+.sidebar-toggle {
+  display: none;
+  background-color: #532b88;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 999;
+    transform: translateX(-100%);
+  }
+
+  .sidebar-collapsed {
+    transform: translateX(0);
+  }
+
+  .sidebar-toggle {
+    display: block;
+  }
+}
+
 </style>

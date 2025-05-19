@@ -29,7 +29,7 @@
     <!-- Right Section: Form Area -->
     <div class="form-area">
       <h2 class="form-title">Upload a new score</h2>
-      <p class="form-subtitle">Contribute to the community</p>
+      <p class="form-subtitle">Grow your Harmonic Archive</p>
       <form @submit.prevent="submitForm">
         <div class="form-fields">
           <div class="form-group">
@@ -225,6 +225,10 @@ export default {
         // Convert genres and instruments strings to arrays
       this.formData.genres = this.formData.genres.split(",").map(item => item.trim());
       this.formData.instruments = this.formData.instruments.split(",").map(item => item.trim());
+
+      const currentUser = await api.getCurrentUser();
+      const userId = currentUser.userId;
+      this.formData.userId = userId; // Add userId to formData 
 
       try {
         const response = await api.uploadMetadata(this.formData);

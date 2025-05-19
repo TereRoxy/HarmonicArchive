@@ -106,12 +106,14 @@
 }
 
 .choose-file-btn {
+  width: 150px;
+  height: 40px;
   padding: 0.5rem 1rem;
   background-color: #532b88;
   color: #f4effa;
   font-size: 0.9rem;
   font-weight: 400;
-  border-radius: 8px;
+  border-radius: 5px 10px 5px 10px;
   cursor: pointer;
   transition: background-color 0.3s;
 }
@@ -162,7 +164,7 @@
   width: 100%;
   padding: 0.5rem;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 5px 10px 5px 10px !important;
   font-size: 0.875rem; /* Smaller font size */
   color: #4b5563;
   background-color: #f9fafb;
@@ -175,10 +177,12 @@
 
 .cancel-btn,
 .upload-btn {
+  width: 150%;
+  height: 40px;
   padding: 0.6rem 1.5rem;
   font-size: 0.9rem;
   font-weight: 400;
-  border-radius: 8px;
+  border-radius: 5px 10px 5px 10px !important; 
   cursor: pointer;
   transition: background-color 0.3s;
 }

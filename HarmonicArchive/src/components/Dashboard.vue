@@ -6,6 +6,8 @@
       :instruments="instruments"
       :selectedGenres="selectedGenres"
       :selectedInstruments="selectedInstruments"
+      :isLoadingGenres="isLoadingGenres"
+      :isLoadingInstruments="isLoadingInstruments"
       :musicSheets="musicSheets"
       @toggleGenre="toggleGenre"
       @toggleInstrument="toggleInstrument"
@@ -61,6 +63,7 @@ import MusicGrid from "./MusicGrid.vue";
 import api from "../services/api";
 import { Title } from "chart.js";
 import Footer from "./Footer.vue"; // Import the Footer component
+import { getCurrentUserTags } from "../services/api";
 
 export default {
   components: {
@@ -74,6 +77,8 @@ export default {
     return {
       selectedGenres: [],
       selectedInstruments: [],
+      isLoadingGenres: true,
+      isLoadingInstruments: true,
       searchQuery: "",
       sortBy: "title",
       sortOrder: "asc",
@@ -81,8 +86,8 @@ export default {
       itemsPerPage: 12,
       worker: null,
       workerActive: false,
-      genres: ["Rock", "Pop", "Classical"],
-      instruments: ["Guitar", "Piano", "Drums"],
+      genres: [],
+      instruments: [],
       musicSheets: [], // Replace state.musicSheets with local data
       totalItems: 60, // Total number of items for pagination
       connectionStatus: 'disconnected', // Connection status for WebSocket
@@ -123,6 +128,19 @@ export default {
         console.error("Error fetching music sheets:", error);
       });
   },
+
+  async fetchTags() {
+    try {
+      const tags = await getCurrentUserTags(); // Call the API to fetch tags
+      this.genres = tags.genres || [];
+      this.instruments = tags.instruments || [];
+      this.isLoadingGenres = false; // Set loading state to false after fetching
+      this.isLoadingInstruments = false; // Set loading state to false after fetching
+    } catch (error) {
+      console.error("Error fetching tags:", error);
+    }
+  },
+
     searchItems(query) {
       this.searchQuery = query;
       this.currentPage = 1;
@@ -239,6 +257,7 @@ export default {
     },
   },
   created() {
+    this.fetchTags(); // Fetch tags when the component is created
     this.fetchMusicSheets(); // Fetch data when the component is created
 
       // Check initial generation status
